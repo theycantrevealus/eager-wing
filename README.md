@@ -55,12 +55,16 @@ cd eager-wing
 ### 2. Install dependencies
 
 ```bash
+pnpm install
+# or
 npm install
 ```
 
 ### 3. Start development server
 
 ```bash
+pnpm dev
+# or
 npm run dev
 ```
 
@@ -100,23 +104,73 @@ eager-wing/
 
 ---
 
-## Commit Guidelines
+## 🧩 Conventional Commits
 
-This project follows **Conventional Commits** for consistent commit messages.
-
-**Examples:**
-
-```bash
-feat(core): add spaceship movement system
-fix(ui): fix minimap icon scaling
-docs(readme): update contributing guide
-refactor(engine): optimize collision detection
-test(core): add unit tests for physics
-chore(release): 1.2.0
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification.  
+All commit messages must use the following format:
 
 ```
+<type>[optional scope]: <description>
 
-> Tip: Use `npm commit` (if Commitizen is set up) to auto-format commit messages.
+[optional body]
+
+[optional footer(s)]
+```
+
+### Example
+
+```
+feat(core): add spaceship movement system
+fix(ui): correct minimap scaling issue
+docs(readme): update contributing guide
+refactor(engine): optimize collision detection
+chore(release): 1.2.0
+```
+
+---
+
+### Allowed Commit Types
+
+| Type         | Description                                 | Release Impact      |
+| ------------ | ------------------------------------------- | ------------------- |
+| **feat**     | Introduce a new feature                     | **Minor** (`1.x.0`) |
+| **fix**      | Fix a bug                                   | **Patch** (`1.0.x`) |
+| **perf**     | Improve performance                         | **Patch** (`1.0.x`) |
+| **docs**     | Documentation-only changes                  | None                |
+| **style**    | Code style or formatting changes (no logic) | None                |
+| **refactor** | Code refactor without new features or fixes | None                |
+| **test**     | Add or fix tests                            | None                |
+| **build**    | Changes to build system or dependencies     | None                |
+| **ci**       | Changes to CI/CD configuration              | None                |
+| **chore**    | Maintenance or tooling updates              | None                |
+| **revert**   | Revert a previous commit                    | Depends on context  |
+
+---
+
+### Breaking Changes
+
+If a commit introduces a **breaking change**, include a footer line starting with `BREAKING CHANGE:`.
+
+**Example:**
+
+```
+feat(api): change player login structure
+
+BREAKING CHANGE: The /login endpoint now requires a token parameter.
+```
+
+This will automatically trigger a **major version bump** (`1.x.x → 2.0.0`) by [Semantic Release](https://semantic-release.gitbook.io/).
+
+---
+
+### Commit Tips
+
+- Use `pnpm commit` or `npm run commit` if [Commitizen](https://github.com/commitizen/cz-cli) is installed.
+- Keep descriptions short and meaningful.
+- Use present tense (“add feature” not “added feature”).
+- Avoid punctuation at the end of the description.
+
+> Properly formatted commits allow automatic changelog generation and semantic versioning 🚀
 
 ---
 
@@ -136,8 +190,8 @@ Semantic Release automatically:
 Build and preview the production version:
 
 ```bash
-npm build
-npm preview
+pnpm build
+pnpm preview
 ```
 
 Output files will be generated in the `/dist` directory.
