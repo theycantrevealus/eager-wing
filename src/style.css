@@ -1,0 +1,61 @@
+canvas {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.character-target {
+  font-family: sans-serif;
+  content: "";
+  position: fixed;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.5));
+  width: 276px;
+  height: 73px;
+  padding: 10px;
+  background: url("./assets/character/tags/health.bar.png") no-repeat;
+  z-index: 10;
+}
+
+.character-target label {
+  position: absolute;
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 8pt;
+  padding: 0;
+  color: #8affaf;
+}
+
+.character-target small {
+  position: absolute;
+  top: 26.5px;
+  left: 12px;
+  font-size: 8pt;
+  color: #fff;
+  text-align: center;
+  width: 15px;
+  height: 15px;
+}
+
+.job-icon {
+  position: absolute;
+  width: 37px;
+  height: 37px;
+  border-radius: 100%;
+  left: 33px;
+  top: 15px;
+}
+
+.job-icon.warrior {
+  background-image: url("./assets/job/logo.warrior.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 37px 30px;
+  filter: invert(100%); /* Inverts black to white */
+  background-color: transparent; /* Optional: keeps background transparent or set to any color */
+}
