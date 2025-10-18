@@ -1,10 +1,10 @@
-export type CharacterDimension = {
+export type NPCDimension = {
   height: number
   width: number
   depth: number
 }
 
-export type CharacterAttribute = {
+export type NPCAttribute = {
   modelId: string
   name: string
   level: number

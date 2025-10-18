@@ -1,5 +1,5 @@
+import type { Matrix } from "__&types/Matrix"
 import * as BABYLON from "babylonjs"
-import type { Coordinate } from "../../../types/coordinate"
 
 export class __Camera__ {
   private engine: BABYLON.Engine
@@ -9,13 +9,13 @@ export class __Camera__ {
   constructor(
     engine: BABYLON.Engine,
     scene: BABYLON.Scene,
-    initialTarget: Coordinate,
+    initialTarget: Matrix,
   ) {
     this.engine = engine
     this.scene = scene
 
     const fov = BABYLON.Tools.ToRadians(10)
-    const near = 0.1
+    const near = 2
     const far = 200
 
     const initialRadius = 112
@@ -40,8 +40,8 @@ export class __Camera__ {
       this.camera.attachControl(canvas, true)
     }
 
-    this.camera.lowerRadiusLimit = 50
-    this.camera.upperRadiusLimit = 100
+    this.camera.lowerRadiusLimit = 10 // Zoom in max
+    this.camera.upperRadiusLimit = 100 // Zoom out max
     this.camera.lowerBetaLimit = BABYLON.Tools.ToRadians(45)
     this.camera.upperBetaLimit = BABYLON.Tools.ToRadians(80)
 
