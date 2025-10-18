@@ -37,6 +37,17 @@
   "bugs": {
     "url": "https://github.com/theycantrevealus/eager-wing/issues"
   },
+  "imports": {
+    "__&types/*": [
+      "./src/types/*"
+    ],
+    "__&interfaces/*": [
+      "./src/interfaces/*"
+    ],
+    "__&GL/*": [
+      "./src/gl/*"
+    ]
+  },
   "homepage": "https://github.com/theycantrevealus/eager-wing#readme",
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
@@ -47,6 +58,7 @@
     "@semantic-release/github": "^11.0.6",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/node": "^24.7.2",
+    "@types/stats.js": "^0.17.4",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "@vitejs/plugin-vue": "^6.0.1",

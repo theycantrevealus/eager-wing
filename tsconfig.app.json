@@ -1,6 +1,18 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
+    /* Custom */
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "__&types/*": ["./src/types/*"],
+      "__&interfaces/*": ["./src/interfaces/*"],
+      "__&GL/*": ["./src/gl/*"],
+      "__&vite/components/*": ["./src/components/*"]
+    },
+
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
 
