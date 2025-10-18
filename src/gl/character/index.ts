@@ -57,11 +57,12 @@ export class __Character__ {
     forearm: { minimum: 1.1, maximum: 1.2 },
   }
 
-  private currentAction: BABYLON.AnimationGroup | null = null
-  private actionMap: Record<string, BABYLON.AnimationGroup> = {}
-  private lastMovementState: string = ""
-  private sideSpeed: number = 0.05
-  private runSpeed: number = 0.3
+  // TODO : Animation preparation
+  // private currentAction: BABYLON.AnimationGroup | null = null
+  // private actionMap: Record<string, BABYLON.AnimationGroup> = {}
+  // private lastMovementState: string = ""
+  // private sideSpeed: number = 0.05
+  // private runSpeed: number = 0.3
 
   /**
    * Create character instance. Handle the character customizations, animations, motions, and else.
@@ -216,7 +217,7 @@ export class __Character__ {
     Object.keys(this.controlPanelBones).forEach((boneName) => {
       const boneData = this.controlPanelBones[boneName]
       if (boneData?.isDirty) {
-        const scaleValue = boneData.value // Direct use of slider value
+        const scaleValue = boneData.value
         const scaleVector = new BABYLON.Vector3(
           scaleValue,
           scaleValue,
@@ -233,7 +234,6 @@ export class __Character__ {
           mesh.markAsDirty()
           mesh.computeWorldMatrix(true)
           if (mesh instanceof BABYLON.Mesh && mesh.geometry) {
-            // mesh.geometry._resetVertexData()
             mesh.geometry.applyToMesh(mesh)
           }
         }
@@ -257,7 +257,10 @@ export class __Character__ {
 
     this.characterAssets = new BABYLON.AssetContainer(this.scene)
 
-    // Clone skeletons
+    /**
+     * Clone skeletons
+     * It need to clone so the parent asset provider will keep the model consistency
+     */
     this.characterAssets.skeletons = asset.skeletons.map((skeleton) =>
       skeleton.clone(`${skeleton.name}_${this.characterAttribute.modelId}`),
     )
@@ -284,7 +287,7 @@ export class __Character__ {
             if (clonedSkeleton) {
               clone.skeleton = clonedSkeleton
 
-              this.controlPanelRegisterBones(clonedSkeleton) // Register bones once
+              this.controlPanelRegisterBones(clonedSkeleton)
 
               clonedSkeleton.computeAbsoluteTransforms()
               clonedSkeleton.prepare()
@@ -294,7 +297,8 @@ export class __Character__ {
         return clone
       })
       .filter((m): m is BABYLON.AbstractMesh => m !== null)
-    // Stop animations to test if they override scaling
+
+    // TODO : Currently stop animations to test if they override scaling. Will done on animation management branch
     this.characterAssets.animationGroups.forEach((ag) => {
       ag.stop()
       ag.onAnimationGroupPlayObservable.clear() // Prevent restarts
@@ -306,25 +310,25 @@ export class __Character__ {
       .filter((m) => m !== null)
 
     // TODO : Clone animations
-    // this.characterAssets.animationGroups = asset.animationGroups.map(
-    //   (group) => {
-    //     const animateClone = group.clone(
-    //       `${group.name}_${this.characterAttribute.modelId}`,
-    //       (target) => {
-    //         return (
-    //           this.characterAssets!.meshes.find((m) =>
-    //             m.name.includes(target.name),
-    //           ) || target
-    //         )
-    //       },
-    //     )
-    //     this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
-    //       animateClone
-    //     return animateClone
-    //   },
-    // )
+    /*this.characterAssets.animationGroups = asset.animationGroups.map(
+      (group) => {
+        const animateClone = group.clone(
+          `${group.name}_${this.characterAttribute.modelId}`,
+          (target) => {
+            return (
+              this.characterAssets!.meshes.find((m) =>
+                m.name.includes(target.name),
+              ) || target
+            )
+          },
+        )
+        this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
+          animateClone
+        return animateClone
+      },
+    )*/
 
-    // Set up character root
+    // Set up character root : So the instance could be re-use or handle from other spot
     this.characterRoot = new BABYLON.TransformNode(
       `character_root_${this.characterAttribute.modelId}`,
       this.scene,
@@ -342,14 +346,14 @@ export class __Character__ {
     )
     this.characterAssets.addAllToScene()
 
-    // Add label
+    // Provide label for character such like nickname or else
     ;({ plane: this.labelPlane, observer: this.labelUpdateObserver } =
       this.label.makeLabel(
         this.characterAttribute.information.name,
         this.characterRoot,
       ))
 
-    // Add axes for debugging
+    // TODO : Remove on production. Add axes for debugging
     if (this.characterRoot) {
       const axes = new BABYLON.AxesViewer(this.scene, 1)
       axes.xAxis.parent = this.characterRoot
@@ -357,11 +361,11 @@ export class __Character__ {
       axes.zAxis.parent = this.characterRoot
     }
 
-    // Add render loop to apply bone scaling
+    // TODO : Remove on production. Add render loop to apply bone scaling for model customization
     this.scene.registerBeforeRender(() => {
       if (this.characterAssets?.skeletons && this.isControlPanelCreated) {
         this.characterAssets.skeletons.forEach((skeleton) => {
-          this.applyBoneScales(skeleton) // Apply current slider values
+          this.applyBoneScales(skeleton)
         })
       }
     })
@@ -469,15 +473,18 @@ export class __Character__ {
                     ? bone.name.replace(".R.002", "")
                     : bone.name
 
-        // const pairKey =
-        //   isLeft ||
-        //   isRight ||
-        //   isLeft001 ||
-        //   isRight001 ||
-        //   isLeft002 ||
-        //   isRight002
-        //     ? baseName
-        //     : bone.name
+        // This block is used to identify paired body part. But not in used currently
+        /**
+         * const pairKey =
+          isLeft ||
+          isRight ||
+          isLeft001 ||
+          isRight001 ||
+          isLeft002 ||
+          isRight002
+            ? baseName
+            : bone.name
+         */
 
         if (
           (isLeft ||
@@ -670,11 +677,12 @@ export class __Character__ {
     return originalScales
   }
 
-  private updateAnimation(key: KeyState): void {
-    if (!this.isLoaded) {
-      return
-    }
-  }
+  // TODO : Animation preparation
+  // private updateAnimation(key: KeyState): void {
+  //   if (!this.isLoaded) {
+  //     return
+  //   }
+  // }
 
   /**
    * @public
