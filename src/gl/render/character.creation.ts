@@ -15,6 +15,12 @@ export class __CharacterCreation__ {
   private characterInstance: __Character__ | null = null
   private GLTFCharacter: BABYLON.AssetContainer | null = null
 
+  // Wallpaper background elements
+  private bgDiv: HTMLDivElement | null = null
+  private bgImg: HTMLImageElement | null = null
+  private wallpaperUrl: string = "./src/assets/wallpaper/character.creation.jpg" // Replace with your image URL (e.g., a vibrant abstract or gradient)
+  private defaultRadius: number = 2.0 // Will be set dynamically
+
   // Control Panel
   private isControlPanelCreated: boolean = false
   private controlPanelBones: Record<
@@ -45,7 +51,7 @@ export class __CharacterCreation__ {
     })
 
     this.scene = new BABYLON.Scene(this.engine)
-    this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1)
+    this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
 
     const material = new BABYLON.StandardMaterial("planeMaterial", this.scene)
     material.diffuseColor = BABYLON.Color3.FromInts(156, 156, 156)
@@ -61,14 +67,32 @@ export class __CharacterCreation__ {
     this.stats.showPanel(0)
     document.body.appendChild(this.stats.dom)
 
-    // Initialize asynchronously
+    // Create background div and img
+    this.bgDiv = document.createElement("div")
+    this.bgDiv.style.position = "absolute"
+    this.bgDiv.style.top = "0"
+    this.bgDiv.style.left = "0"
+    this.bgDiv.style.width = "100%"
+    this.bgDiv.style.height = "100%"
+    this.bgDiv.style.overflow = "hidden"
+    this.bgDiv.style.zIndex = "-1"
+    document.body.appendChild(this.bgDiv)
+
+    this.bgImg = document.createElement("img")
+    this.bgImg.src = this.wallpaperUrl
+    this.bgImg.style.width = "100%"
+    this.bgImg.style.height = "100%"
+    this.bgImg.style.objectFit = "cover"
+    this.bgImg.style.transformOrigin = "center center"
+    this.bgDiv.appendChild(this.bgImg)
+
     this.init().then(() => {
       this.animate()
     })
   }
 
   async init() {
-    await this.init_character_gltf("../characters/Female/Female.glb")
+    await this.init_character_gltf("../characters/Female/FemaleMeshed.glb")
 
     if (this.GLTFCharacter) {
       this.characterInstance = new __Character__(
@@ -113,9 +137,20 @@ export class __CharacterCreation__ {
       }
       if (this.camera) {
         this.scene.activeCamera = this.camera
+        this.defaultRadius = this.camera.radius // Set default for zoom baseline
       } else {
         console.error("Failed to create camera. Scene may not render.")
       }
+    }
+
+    // Register zoom update for background
+    if (this.camera && this.bgImg) {
+      this.scene.registerBeforeRender(() => {
+        if (this.camera) {
+          const zoomFactor = this.defaultRadius / this.camera.radius
+          this.bgImg!.style.transform = `scale(${zoomFactor})`
+        }
+      })
     }
   }
 
@@ -285,6 +320,11 @@ export class __CharacterCreation__ {
     window.removeEventListener("resize", () => this.handleResize())
     if (this.characterInstance) this.characterInstance.destroy()
     if (this.cameraInstance) this.cameraInstance.destroy()
+
+    // Remove background elements
+    if (this.bgDiv && this.bgDiv.parentNode) {
+      this.bgDiv.parentNode.removeChild(this.bgDiv)
+    }
 
     this.scene.dispose()
     this.engine.dispose()

@@ -25,26 +25,52 @@ export class __CameraHead__ {
     let headSize: number
 
     // Try to find a head mesh for size estimation
-    const headMesh = this.findHeadMesh(characterRoot)
-    if (headMesh) {
-      const { min, max } = headMesh.getHierarchyBoundingVectors(true)
-      const extent = max.subtract(min)
-      headSize = Math.max(extent.x, extent.y, extent.z)
-      console.log(`Head mesh found: ${headMesh.name}, headSize: ${headSize}`)
-    } else {
-      console.warn("No head mesh found. Using fallback head size.")
-      headSize = 0.4 // Increased for better framing (adjust for model scale)
+    // const headMesh = this.findHeadMesh(characterRoot)
+    // if (headMesh) {
+    //   const { min, max } = headMesh.getHierarchyBoundingVectors(true)
+    //   const extent = max.subtract(min)
+    //   headSize = Math.max(extent.x, extent.y, extent.z)
+    //   console.log(`Head mesh found: ${headMesh.name}, headSize: ${headSize}`)
+    // } else {
+    //   console.warn("No head mesh found. Using fallback head size.")
+    //   headSize = 0.4 // Increased for better framing (adjust for model scale)
+    // }
+
+    headSize = 0.4
+
+    const bodyMesh = scene.getMeshByName("FemaleBasemesh_01_001")
+    if (bodyMesh && bodyMesh.material) {
+      const material = bodyMesh.material as BABYLON.PBRMaterial
+      material.albedoColor = BABYLON.Color3.FromHexString("#ffc095")
+      // Or from RGB: new BABYLON.Color3(0.82, 0.71, 0.55);
     }
 
-    if (!headBone) {
-      console.warn("No head bone found. Using characterRoot as fallback.")
-      center = characterRoot.position
+    const eyeMesh = scene.getMeshByName("Female_Eyes_001")
+    if (eyeMesh && eyeMesh.material instanceof BABYLON.PBRMaterial) {
+      const material = eyeMesh.material as BABYLON.PBRMaterial
+      material.albedoColor = BABYLON.Color3.FromHexString("#cccccc")
     } else {
-      const transformNode = headBone.getTransformNode()
-      center = transformNode
-        ? transformNode.getAbsolutePosition()
-        : characterRoot.position
+      console.error("Lips mesh or material not found, or not PBRMaterial")
     }
+
+    const lipsMesh = scene.getMeshByName("Lip.T_001")
+    if (lipsMesh && lipsMesh.material instanceof BABYLON.PBRMaterial) {
+      const material = lipsMesh.material as BABYLON.PBRMaterial
+      material.albedoColor = BABYLON.Color3.FromHexString("#ff0000")
+    } else {
+      console.error("Lips mesh or material not found, or not PBRMaterial")
+    }
+
+    // if (!headBone) {
+    //   console.warn("No head bone found. Using characterRoot as fallback.")
+    //   center = characterRoot.position
+    // } else {
+    //   const transformNode = headBone.getTransformNode()
+    //   center = transformNode
+    //     ? transformNode.getAbsolutePosition()
+    //     : characterRoot.position
+    // }
+    center = characterRoot.position
 
     console.log(`Camera target: ${center.toString()}, headSize: ${headSize}`)
 
@@ -67,11 +93,12 @@ export class __CameraHead__ {
     this.camera.allowUpsideDown = false
 
     // Adjust field of view for full-screen head framing
-    this.camera.fov = 0.6 // Narrower FOV (default is ~0.8) to make head appear larger
+    this.camera.fov = 1.6 // Narrower FOV (default is ~0.8) to make head appear larger
 
     const canvas = engine.getRenderingCanvas()
     if (canvas) {
       this.camera.attachControl(canvas, true)
+      this.camera.wheelPrecision = 50
     }
 
     // Update camera target if character moves/animates
@@ -125,14 +152,6 @@ export class __CameraHead__ {
     }
 
     const transformNodes = this.getAllTransformNodes(rootNode)
-    console.log(
-      "Transform nodes in hierarchy:",
-      transformNodes.map((node) => ({
-        name: node.name,
-        id: node.id,
-        parent: node.parent?.name || "none",
-      })),
-    )
 
     const headTransform = transformNodes.find(
       (node) =>

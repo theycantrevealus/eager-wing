@@ -240,12 +240,12 @@ export class __Character__ {
       ))
 
     // TODO : Remove on production. Add axes for debugging
-    if (this.characterRoot) {
-      const axes = new BABYLON.AxesViewer(this.scene, 1)
-      axes.xAxis.parent = this.characterRoot
-      axes.yAxis.parent = this.characterRoot
-      axes.zAxis.parent = this.characterRoot
-    }
+    // if (this.characterRoot) {
+    //   const axes = new BABYLON.AxesViewer(this.scene, 1)
+    //   axes.xAxis.parent = this.characterRoot
+    //   axes.yAxis.parent = this.characterRoot
+    //   axes.zAxis.parent = this.characterRoot
+    // }
 
     // TODO : Remove on production. Add render loop to apply bone scaling for model customization
     this.scene.registerBeforeRender(() => {
@@ -322,14 +322,14 @@ export class __Character__ {
    */
   private controlPanelRegisterBones(skeleton: BABYLON.Skeleton): void {
     const keyBones = [
-      // "pelvis",
-      // "breast",
-      // "arm",
-      // "thigh",
-      // "shoulder",
-      // "neck",
-      // "head",
-      // "forearm",
+      "pelvis",
+      "breast",
+      "arm",
+      "thigh",
+      "shoulder",
+      "neck",
+      "head",
+      "forearm",
 
       // Facial Control
       "forehead",
