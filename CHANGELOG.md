@@ -1,3 +1,11 @@
+# [1.2.0](https://github.com/theycantrevealus/eager-wing/compare/v1.1.0...v1.2.0) (2025-10-19)
+
+
+### Features
+
+* page control ([9260220](https://github.com/theycantrevealus/eager-wing/commit/926022088ec1d6faea9808787fdee20644a25321))
+* split render for character creation ([0d04183](https://github.com/theycantrevealus/eager-wing/commit/0d0418383339348a288f3bb9ab37e02af1bc60aa))
+
 # [1.1.0](https://github.com/theycantrevealus/eager-wing/compare/v1.0.1...v1.1.0) (2025-10-19)
 
 
