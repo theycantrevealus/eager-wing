@@ -45,11 +45,24 @@ export class __Character__ {
   > = {}
   private isControlPanelCreated: boolean = false
 
-  private currentAction: BABYLON.AnimationGroup | null = null
-  private actionMap: Record<string, BABYLON.AnimationGroup> = {}
-  private lastMovementState: string = ""
-  private sideSpeed: number = 0.05
-  private runSpeed: number = 0.3
+  private boneConfigOverrides: {
+    [key: string]: { minimum: number; maximum: number }
+  } = {
+    // TODO : This block should load from system config
+    breast: { minimum: 0.8, maximum: 1.0 },
+    pelvis: { minimum: 0.9, maximum: 1.8 },
+    upper_arm: { minimum: 1.0, maximum: 1.1 },
+    thigh: { minimum: 1, maximum: 1.2 },
+    shoulder: { minimum: 0.9, maximum: 1.2 },
+    forearm: { minimum: 1.1, maximum: 1.2 },
+  }
+
+  // TODO : Animation preparation
+  // private currentAction: BABYLON.AnimationGroup | null = null
+  // private actionMap: Record<string, BABYLON.AnimationGroup> = {}
+  // private lastMovementState: string = ""
+  // private sideSpeed: number = 0.05
+  // private runSpeed: number = 0.3
 
   /**
    * Create character instance. Handle the character customizations, animations, motions, and else.
@@ -82,7 +95,10 @@ export class __Character__ {
   }
 
   /**
+   * @private
    * Create a GUI panel for controlling bone scales
+   *
+   * @returns
    */
   private createScaleControlPanel(): void {
     if (this.isControlPanelCreated) return
@@ -101,54 +117,103 @@ export class __Character__ {
     const panel = new GUI.StackPanel()
     panel.width = "380px"
     scrollViewer.addControl(panel)
-    console.log(
-      `Creating sliders for ${Object.keys(this.controlPanelBones).length} bones`,
-    )
-    Object.keys(this.controlPanelBones).forEach((key) => {
+
+    const processedGroups: Set<string> = new Set()
+    const boneKeys = Object.keys(this.controlPanelBones)
+
+    boneKeys.forEach((key) => {
+      const isLeft = key.endsWith(".L")
+      const isRight = key.endsWith(".R")
+      const isLeft001 = key.endsWith(".L.001")
+      const isRight001 = key.endsWith(".R.001")
+      const isLeft002 = key.endsWith(".L.002")
+      const isRight002 = key.endsWith(".R.002")
+      const baseName = isLeft
+        ? key.replace(".L", "")
+        : isRight
+          ? key.replace(".R", "")
+          : isLeft001
+            ? key.replace(".L.001", "")
+            : isRight001
+              ? key.replace(".R.001", "")
+              : isLeft002
+                ? key.replace(".L.002", "")
+                : isRight002
+                  ? key.replace(".R.002", "")
+                  : key
+
+      if (
+        (isLeft ||
+          isRight ||
+          isLeft001 ||
+          isRight001 ||
+          isLeft002 ||
+          isRight002) &&
+        processedGroups.has(baseName)
+      ) {
+        return
+      }
+
       const itemDetail: any = this.controlPanelBones[key]
       const boneScaleSlider = new GUI.Slider()
-      boneScaleSlider.minimum = itemDetail.minimum
-      boneScaleSlider.maximum = itemDetail.maximum
+      boneScaleSlider.minimum = itemDetail.minimum // 0.5 = smaller
+      boneScaleSlider.maximum = itemDetail.maximum // 3.0 = larger
       boneScaleSlider.value = itemDetail.value
       boneScaleSlider.step = itemDetail.step
       boneScaleSlider.height = "20px"
       boneScaleSlider.width = "250px"
-      boneScaleSlider.onValueChangedObservable.add((value) => {
-        console.log(`Slider changed for ${key}: New value ${value}`)
 
+      const isPaired =
+        isLeft || isRight || isLeft001 || isRight001 || isLeft002 || isRight002
+      const displayName = isPaired ? baseName.replace("DEF-", "") : key
+
+      boneScaleSlider.onValueChangedObservable.add((value) => {
         if (this.controlPanelBones[key]) {
           this.controlPanelBones[key].value = value
           this.controlPanelBones[key].isDirty = true
         }
 
-        console.log(
-          `Updated controlPanelBones[${key}]:`,
-          this.controlPanelBones[key],
-        )
+        if (isPaired) {
+          const pairedBoneNames = [
+            `${baseName}.L`,
+            `${baseName}.R`,
+            `${baseName}.L.001`,
+            `${baseName}.R.001`,
+            `${baseName}.L.002`,
+            `${baseName}.R.002`,
+          ].filter((name) => name !== key)
+          pairedBoneNames.forEach((pairedBoneName) => {
+            if (this.controlPanelBones[pairedBoneName]) {
+              this.controlPanelBones[pairedBoneName].value = value
+              this.controlPanelBones[pairedBoneName].isDirty = true
+            }
+          })
+        }
       })
+
       const boneHeaderLabel = new GUI.TextBlock()
-      boneHeaderLabel.text = key
+      boneHeaderLabel.text = displayName
       boneHeaderLabel.height = "20px"
       boneHeaderLabel.color = "white"
       panel.addControl(boneHeaderLabel)
       panel.addControl(boneScaleSlider)
+
+      if (isPaired) {
+        processedGroups.add(baseName)
+      }
     })
+
     this.isControlPanelCreated = true
-    console.log(
-      `Control panel created with ${panel.children.length / 2} sliders`,
-    )
   }
 
   /**
+   * @private
    * Apply current scale values from controlPanelBones to all registered bones
+   *
+   * @param { BABYLON.Skeleton } skeleton - Skeleton to apply the scale
+   * @returns
    */
   private applyBoneScales(skeleton: BABYLON.Skeleton): void {
-    console.log(
-      `Applying scales for skeleton: ${skeleton.name}, bound meshes:`,
-      this.characterAssets?.meshes
-        .filter((m) => m.skeleton === skeleton)
-        .map((m) => m.name) || "None",
-    )
     Object.keys(this.controlPanelBones).forEach((boneName) => {
       const boneData = this.controlPanelBones[boneName]
       if (boneData?.isDirty) {
@@ -158,8 +223,7 @@ export class __Character__ {
           scaleValue,
           scaleValue,
         )
-        console.log(`Applying scale ${scaleValue} to bone ${boneName}`)
-        this.resizeBone(skeleton, boneName, scaleVector, false)
+        this.resizeBone(skeleton, boneName, scaleVector)
         boneData.isDirty = false
       }
     })
@@ -167,56 +231,13 @@ export class __Character__ {
       this.characterAssets.meshes.forEach((mesh) => {
         if (mesh.skeleton === skeleton) {
           mesh.refreshBoundingInfo({ applySkeleton: true })
-          const boundingInfo = mesh.getBoundingInfo().boundingBox
-          console.log(
-            `Refreshed mesh: ${mesh.name}, Bounding min:`,
-            boundingInfo.minimum.toArray([], 0),
-            `max:`,
-            boundingInfo.maximum.toArray([], 0),
-          )
-          ;["DEF-pelvis.R", "DEF-breast.L"].forEach((boneName) => {
-            const bone = skeleton.bones.find((b) => b.name === boneName)
-            if (bone && mesh.subMeshes && mesh.skeleton) {
-              const boneIndex = skeleton.getBoneIndexByName(bone.name)
-              const weights = mesh.getVerticesData(
-                BABYLON.VertexBuffer.MatricesWeightsKind,
-              )
-              const indices = mesh.getVerticesData(
-                BABYLON.VertexBuffer.MatricesIndicesKind,
-              )
-              const weightCount =
-                weights && indices
-                  ? weights.filter(
-                      (w, i) =>
-                        i % 4 === 0 && w > 0 && indices[i] === boneIndex,
-                    ).length
-                  : 0
-              console.log(
-                `Vertex weights for ${boneName} on ${mesh.name}: ${weightCount} vertices`,
-              )
-            }
-          })
           mesh.markAsDirty()
-          mesh.computeWorldMatrix(true) // Force full update
+          mesh.computeWorldMatrix(true)
+          if (mesh instanceof BABYLON.Mesh && mesh.geometry) {
+            mesh.geometry.applyToMesh(mesh)
+          }
         }
       })
-    }
-    if (this.characterAssets?.animationGroups) {
-      const activeAnims = this.characterAssets.animationGroups.filter(
-        (ag) => ag.isPlaying,
-      )
-      console.log(
-        `Active animations check:`,
-        activeAnims.length > 0
-          ? activeAnims.map((ag) => ag.name)
-          : "No active animations",
-      )
-      if (activeAnims.length > 0) {
-        console.warn(
-          `Active animations may override bone scaling:`,
-          activeAnims.map((ag) => ag.name),
-        )
-      }
     }
   }
 
@@ -236,7 +257,10 @@ export class __Character__ {
 
     this.characterAssets = new BABYLON.AssetContainer(this.scene)
 
-    // Clone skeletons
+    /**
+     * Clone skeletons
+     * It need to clone so the parent asset provider will keep the model consistency
+     */
     this.characterAssets.skeletons = asset.skeletons.map((skeleton) =>
       skeleton.clone(`${skeleton.name}_${this.characterAttribute.modelId}`),
     )
@@ -255,14 +279,6 @@ export class __Character__ {
             this.characterAttribute.information.dimension.scale,
           )
 
-          console.log(
-            `Mesh: ${clone.name}, Has skeleton: ${!!clone.skeleton}, Skeleton name: ${clone.skeleton?.name || "None"}`,
-          )
-          console.log(
-            `Mesh: ${clone.name}, Applied model scale:`,
-            this.characterAttribute.information.dimension.scale,
-          )
-
           // Rebind skeleton
           if (mesh.skeleton) {
             const clonedSkeleton = this.characterAssets!.skeletons.find((s) =>
@@ -271,7 +287,7 @@ export class __Character__ {
             if (clonedSkeleton) {
               clone.skeleton = clonedSkeleton
 
-              this.controlPanelRegisterBones(clonedSkeleton) // Register bones once
+              this.controlPanelRegisterBones(clonedSkeleton)
 
               clonedSkeleton.computeAbsoluteTransforms()
               clonedSkeleton.prepare()
@@ -281,9 +297,9 @@ export class __Character__ {
         return clone
       })
       .filter((m): m is BABYLON.AbstractMesh => m !== null)
-    // Stop animations to test if they override scaling
+
+    // TODO : Currently stop animations to test if they override scaling. Will done on animation management branch
     this.characterAssets.animationGroups.forEach((ag) => {
-      console.log(`Stopping animation: ${ag.name}`)
       ag.stop()
       ag.onAnimationGroupPlayObservable.clear() // Prevent restarts
       ag.onAnimationGroupLoopObservable.clear()
@@ -293,26 +309,26 @@ export class __Character__ {
       .map((mat) => mat.clone(`${mat.name}_${this.characterAttribute.modelId}`))
       .filter((m) => m !== null)
 
-    // Clone animations
-    // this.characterAssets.animationGroups = asset.animationGroups.map(
-    //   (group) => {
-    //     const animateClone = group.clone(
-    //       `${group.name}_${this.characterAttribute.modelId}`,
-    //       (target) => {
-    //         return (
-    //           this.characterAssets!.meshes.find((m) =>
-    //             m.name.includes(target.name),
-    //           ) || target
-    //         )
-    //       },
-    //     )
-    //     this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
-    //       animateClone
-    //     return animateClone
-    //   },
-    // )
+    // TODO : Clone animations
+    /*this.characterAssets.animationGroups = asset.animationGroups.map(
+      (group) => {
+        const animateClone = group.clone(
+          `${group.name}_${this.characterAttribute.modelId}`,
+          (target) => {
+            return (
+              this.characterAssets!.meshes.find((m) =>
+                m.name.includes(target.name),
+              ) || target
+            )
+          },
+        )
+        this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
+          animateClone
+        return animateClone
+      },
+    )*/
 
-    // Set up character root
+    // Set up character root : So the instance could be re-use or handle from other spot
     this.characterRoot = new BABYLON.TransformNode(
       `character_root_${this.characterAttribute.modelId}`,
       this.scene,
@@ -330,14 +346,14 @@ export class __Character__ {
     )
     this.characterAssets.addAllToScene()
 
-    // Add label
+    // Provide label for character such like nickname or else
     ;({ plane: this.labelPlane, observer: this.labelUpdateObserver } =
       this.label.makeLabel(
         this.characterAttribute.information.name,
         this.characterRoot,
       ))
 
-    // Add axes for debugging
+    // TODO : Remove on production. Add axes for debugging
     if (this.characterRoot) {
       const axes = new BABYLON.AxesViewer(this.scene, 1)
       axes.xAxis.parent = this.characterRoot
@@ -345,14 +361,11 @@ export class __Character__ {
       axes.zAxis.parent = this.characterRoot
     }
 
-    // Add render loop to apply bone scaling
+    // TODO : Remove on production. Add render loop to apply bone scaling for model customization
     this.scene.registerBeforeRender(() => {
-      console.log(
-        `Render loop: Applying bone scales for ${this.characterAssets?.skeletons.length || 0} skeletons`,
-      )
       if (this.characterAssets?.skeletons && this.isControlPanelCreated) {
         this.characterAssets.skeletons.forEach((skeleton) => {
-          this.applyBoneScales(skeleton) // Apply current slider values
+          this.applyBoneScales(skeleton)
         })
       }
     })
@@ -419,60 +432,121 @@ export class __Character__ {
   }
 
   /**
-   * Log the parent bones of bones matching a given regex pattern
-   * @param skeleton - The skeleton to inspect
-   * @param pattern - Regex pattern to match bone names
-   */
-  private logBonesHierarchy(skeleton: BABYLON.Skeleton, pattern: RegExp): void {
-    const matchingBones = skeleton.bones.filter((b) => pattern.test(b.name))
-
-    if (matchingBones.length === 0) {
-      console.warn(`No bones matched pattern: ${pattern}`)
-      return
-    }
-
-    matchingBones.forEach((bone) => {
-      const parentBone = bone.getParent()
-      if (parentBone) {
-        const parentScale = parentBone.scaling.clone()
-        console.log(
-          `Bone "${bone.name}" has parent "${parentBone.name}" with scale:`,
-          {
-            x: parentScale.x,
-            y: parentScale.y,
-            z: parentScale.z,
-          },
-        )
-      } else {
-        console.log(`Bone "${bone.name}" has no parent (root bone)`)
-      }
-    })
-  }
-
-  /**
    * Register skeleton bones to control panel for dynamic resizing
    */
   private controlPanelRegisterBones(skeleton: BABYLON.Skeleton): void {
-    const keyBones = ["pelvis", "breast", "arm", "thigh", "spine", "shoulder"]
+    const keyBones = [
+      "pelvis",
+      "breast",
+      "arm",
+      "thigh",
+      "shoulder",
+      "neck",
+      "head",
+      "forearm",
+    ]
+    const processedPairs: Set<string> = new Set()
+
     skeleton.bones.forEach((bone) => {
       if (
         bone.name.startsWith("DEF-") &&
         keyBones.some((key) => bone.name.toLowerCase().includes(key)) &&
         !this.controlPanelBones[bone.name]
       ) {
-        console.log(`Registered deform bone: ${bone.name}`)
+        const isLeft = bone.name.endsWith(".L")
+        const isRight = bone.name.endsWith(".R")
+        const isLeft001 = bone.name.endsWith(".L.001")
+        const isRight001 = bone.name.endsWith(".R.001")
+        const isLeft002 = bone.name.endsWith(".L.002")
+        const isRight002 = bone.name.endsWith(".R.002")
+        const baseName = isLeft
+          ? bone.name.replace(".L", "")
+          : isRight
+            ? bone.name.replace(".R", "")
+            : isLeft001
+              ? bone.name.replace(".L.001", "")
+              : isRight001
+                ? bone.name.replace(".R.001", "")
+                : isLeft002
+                  ? bone.name.replace(".L.002", "")
+                  : isRight002
+                    ? bone.name.replace(".R.002", "")
+                    : bone.name
+
+        // This block is used to identify paired body part. But not in used currently
+        /**
+         * const pairKey =
+          isLeft ||
+          isRight ||
+          isLeft001 ||
+          isRight001 ||
+          isLeft002 ||
+          isRight002
+            ? baseName
+            : bone.name
+         */
+
+        if (
+          (isLeft ||
+            isRight ||
+            isLeft001 ||
+            isRight001 ||
+            isLeft002 ||
+            isRight002) &&
+          processedPairs.has(baseName)
+        ) {
+          return
+        }
+
+        // Check for overrides based on baseName (without DEF-)
+        const overrideKey = baseName.replace("DEF-", "").toLowerCase()
+        const config = this.boneConfigOverrides[overrideKey] || {
+          minimum: 0.5,
+          maximum: 3.0,
+        }
+
         this.controlPanelBones[bone.name] = {
-          minimum: 0.1,
-          maximum: 1.0,
+          minimum: config.minimum,
+          maximum: config.maximum,
           value: 1.0,
-          step: 0.1,
+          step: 0.0001,
           isDirty: false,
+        }
+
+        if (
+          isLeft ||
+          isRight ||
+          isLeft001 ||
+          isRight001 ||
+          isLeft002 ||
+          isRight002
+        ) {
+          const pairedBoneNames = [
+            `${baseName}.L`,
+            `${baseName}.R`,
+            `${baseName}.L.001`,
+            `${baseName}.R.001`,
+            `${baseName}.L.002`,
+            `${baseName}.R.002`,
+          ].filter((name) => name !== bone.name)
+          pairedBoneNames.forEach((pairedBoneName) => {
+            const pairedBone = skeleton.bones.find(
+              (b) => b.name === pairedBoneName,
+            )
+            if (pairedBone && !this.controlPanelBones[pairedBoneName]) {
+              this.controlPanelBones[pairedBoneName] = {
+                minimum: config.minimum,
+                maximum: config.maximum,
+                value: 1.0,
+                step: 0.0001,
+                isDirty: false,
+              }
+            }
+          })
+          processedPairs.add(baseName)
         }
       }
     })
-    console.log(
-      `Total bones registered: ${Object.keys(this.controlPanelBones).length}`,
-    )
   }
 
   /**
@@ -487,7 +561,6 @@ export class __Character__ {
     skeleton: BABYLON.Skeleton,
     name: string,
     scale: BABYLON.Vector3,
-    inverse: boolean = false,
   ): Array<{ name: string; originalScale: BABYLON.Vector3 }> {
     const bone = skeleton.bones.find((b) => b.name === name)
     const originalScales: Array<{
@@ -496,106 +569,120 @@ export class __Character__ {
     }> = []
 
     if (!bone) {
-      console.warn(`No bones matched: ${name}`)
       return originalScales
     }
 
-    const originalScale = bone.scaling.clone()
-    originalScales.push({ name: bone.name, originalScale })
-    console.log(`Bone "${bone.name}" original scale:`, {
-      x: originalScale.x,
-      y: originalScale.y,
-      z: originalScale.z,
-    })
+    // Identify paired bone and children
+    const isLeft = name.endsWith(".L")
+    const isRight = name.endsWith(".R")
+    const isLeft001 = name.endsWith(".L.001")
+    const isRight001 = name.endsWith(".R.001")
+    const isLeft002 = name.endsWith(".L.002")
+    const isRight002 = name.endsWith(".R.002")
+    const baseName = isLeft
+      ? name.replace(".L", "")
+      : isRight
+        ? name.replace(".R", "")
+        : isLeft001
+          ? name.replace(".L.001", "")
+          : isRight001
+            ? name.replace(".R.001", "")
+            : isLeft002
+              ? name.replace(".L.002", "")
+              : isRight002
+                ? name.replace(".R.002", "")
+                : name
+    const pairedBoneNames = [
+      `${baseName}.L`,
+      `${baseName}.R`,
+      `${baseName}.L.001`,
+      `${baseName}.R.001`,
+      `${baseName}.L.002`,
+      `${baseName}.R.002`,
+    ].filter((n) => n !== name)
+    const pairedBones = pairedBoneNames
+      .map((pairedName) => skeleton.bones.find((b) => b.name === pairedName))
+      .filter((b) => b) as BABYLON.Bone[]
 
-    // Log and scale parent hierarchy
-    let currentBone: BABYLON.Bone | null = bone
-    const parentBones: BABYLON.Bone[] = []
-    while (currentBone && currentBone.parent) {
-      parentBones.push(currentBone.parent)
-      currentBone = currentBone.parent
-    }
-    parentBones.forEach((parent) => {
-      console.log(`Parent bone "${parent.name}" original scale:`, {
-        x: parent.scaling.x,
-        y: parent.scaling.y,
-        z: parent.scaling.z,
-      })
+    // Store original scales
+    originalScales.push({
+      name: bone.name,
+      originalScale: bone.scaling.clone(),
+    })
+    pairedBones.forEach((pairedBone) => {
       originalScales.push({
-        name: parent.name,
-        originalScale: parent.scaling.clone(),
+        name: pairedBone.name,
+        originalScale: pairedBone.scaling.clone(),
       })
     })
 
-    let effectiveScale = scale.clone()
-    if (inverse) {
-      const epsilon = 0.001
-      effectiveScale = new BABYLON.Vector3(
-        scale.x > epsilon ? 1 / scale.x : 1 / epsilon,
-        scale.y > epsilon ? 1 / scale.y : 1 / epsilon,
-        scale.z > epsilon ? 1 / scale.z : 1 / epsilon,
-      )
-      console.log(`Applying inverse scale for "${bone.name}":`, {
-        x: effectiveScale.x,
-        y: effectiveScale.y,
-        z: effectiveScale.z,
-      })
-    }
-    effectiveScale = new BABYLON.Vector3(
-      originalScale.x * effectiveScale.x,
-      originalScale.y * effectiveScale.y,
-      originalScale.z * effectiveScale.z,
+    // Apply scale directly (0.5 = smaller, 3.0 = larger)
+    const effectiveScale = new BABYLON.Vector3(
+      Math.max(scale.x, 0.8),
+      Math.max(scale.y, 0.8),
+      Math.max(scale.z, 0.8),
     )
-    effectiveScale.x = Math.max(effectiveScale.x, 0.5)
-    effectiveScale.y = Math.max(effectiveScale.y, 0.5)
-    effectiveScale.z = Math.max(effectiveScale.z, 0.5)
+
+    // Animate main bone
+    const animation = new BABYLON.Animation(
+      "boneScale",
+      "scaling",
+      30,
+      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
+    )
+    animation.setKeys([
+      { frame: 0, value: bone.scaling.clone() },
+      { frame: 15, value: effectiveScale }, // 0.5s transition
+    ])
+    bone.animations = [animation]
+    this.scene.beginAnimation(bone, 0, 15, false, 1.0)
+
+    // Animate paired bones
+    pairedBones.forEach((pairedBone) => {
+      const pairedAnimation = new BABYLON.Animation(
+        "boneScale",
+        "scaling",
+        30,
+        BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
+      )
+      pairedAnimation.setKeys([
+        { frame: 0, value: pairedBone.scaling.clone() },
+        { frame: 15, value: effectiveScale },
+      ])
+      pairedBone.animations = [pairedAnimation]
+      this.scene.beginAnimation(pairedBone, 0, 15, false, 1.0)
+    })
 
     bone.scaling = effectiveScale
-    // Scale all parent bones
-    parentBones.forEach((parent) => {
-      parent.scaling = effectiveScale
-      parent._markAsDirtyAndCompose()
-      parent.updateMatrix(parent.getLocalMatrix(), true, true)
+    pairedBones.forEach((pairedBone) => {
+      pairedBone.scaling = effectiveScale
+      // pairedBone._constraint = null
+      pairedBone.markAsDirty()
+      pairedBone._markAsDirtyAndCompose()
+      pairedBone.updateMatrix(pairedBone.getLocalMatrix(), true, true)
     })
+
+    // bone._constraint = null
     bone.markAsDirty()
     bone._markAsDirtyAndCompose()
     bone.updateMatrix(bone.getLocalMatrix(), true, true)
-    console.log(`✅ Resized bone "${bone.name}" to`, {
-      x: bone.scaling.x,
-      y: bone.scaling.y,
-      z: bone.scaling.z,
-    })
-
-    const finalMatrix = bone.getFinalMatrix()
-    const scaleFromMatrix = new BABYLON.Vector3()
-    finalMatrix.decompose(scaleFromMatrix)
-    console.log(`Bone "${bone.name}" final matrix scale:`, {
-      x: scaleFromMatrix.x,
-      y: scaleFromMatrix.y,
-      z: scaleFromMatrix.z,
-    })
-    console.log(
-      `Bone "${bone.name}" world position:`,
-      bone.getAbsolutePosition().toArray([], 0),
-      `world scale:`,
-      (() => {
-        const worldScale = new BABYLON.Vector3()
-        bone.computeWorldMatrix(true).decompose(worldScale)
-        return worldScale.toArray([], 0)
-      })(),
-    )
 
     skeleton.computeAbsoluteTransforms()
     skeleton.prepare()
 
+    console.log(effectiveScale)
+
     return originalScales
   }
 
-  private updateAnimation(key: KeyState): void {
-    if (!this.isLoaded) {
-      return
-    }
-  }
+  // TODO : Animation preparation
+  // private updateAnimation(key: KeyState): void {
+  //   if (!this.isLoaded) {
+  //     return
+  //   }
+  // }
 
   /**
    * @public
