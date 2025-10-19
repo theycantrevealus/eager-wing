@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/theycantrevealus/eager-wing/compare/v1.0.1...v1.1.0) (2025-10-19)
+
+
+### Features
+
+* add female body part customization [forearm, shoulder, thigh, upper_arm, pelvis, breast] ([6b68f17](https://github.com/theycantrevealus/eager-wing/commit/6b68f1791c7cfce0d09bb9f3c0450e7ce5a86245))
+
 ## [1.0.1](https://github.com/theycantrevealus/eager-wing/compare/v1.0.0...v1.0.1) (2025-10-18)
 
 
