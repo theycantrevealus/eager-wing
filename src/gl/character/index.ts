@@ -1,5 +1,4 @@
 import * as BABYLON from "babylonjs"
-import * as GUI from "babylonjs-gui"
 import type { CharacterAttribute } from "__&types/Character"
 import type { Matrix } from "__&types/Matrix"
 import { __Label__ } from "__&GL/label"
@@ -43,7 +42,6 @@ export class __Character__ {
       isDirty: boolean
     }
   > = {}
-  private isControlPanelCreated: boolean = false
 
   private boneConfigOverrides: {
     [key: string]: { minimum: number; maximum: number }
@@ -78,132 +76,20 @@ export class __Character__ {
     characterAttribute: CharacterAttribute,
   ) {
     this.scene = scene
-    scene.debugLayer.show({
-      embedMode: false,
-      overlay: true,
-      handleResize: true,
-    })
+
+    // scene.debugLayer.show({
+    //   embedMode: false,
+    //   overlay: true,
+    //   handleResize: true,
+    // })
+
     this.label = new __Label__(scene)
     this.characterAttribute = characterAttribute
 
     this.loadPromise = this.initCharacter(
       characterAttribute.position,
       characterSharedAsset,
-    ).then(() => {
-      this.createScaleControlPanel() // Create GUI after bones are registered
-    })
-  }
-
-  /**
-   * @private
-   * Create a GUI panel for controlling bone scales
-   *
-   * @returns
-   */
-  private createScaleControlPanel(): void {
-    if (this.isControlPanelCreated) return
-    const advancedTexture = GUI.AdvancedDynamicTexture.CreateFullscreenUI(
-      "UI",
-      true,
-      this.scene,
     )
-    const scrollViewer = new GUI.ScrollViewer()
-    scrollViewer.width = "400px"
-    scrollViewer.height = "400px"
-    scrollViewer.thickness = 2
-    scrollViewer.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT
-    scrollViewer.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP
-    advancedTexture.addControl(scrollViewer)
-    const panel = new GUI.StackPanel()
-    panel.width = "380px"
-    scrollViewer.addControl(panel)
-
-    const processedGroups: Set<string> = new Set()
-    const boneKeys = Object.keys(this.controlPanelBones)
-
-    boneKeys.forEach((key) => {
-      const isLeft = key.endsWith(".L")
-      const isRight = key.endsWith(".R")
-      const isLeft001 = key.endsWith(".L.001")
-      const isRight001 = key.endsWith(".R.001")
-      const isLeft002 = key.endsWith(".L.002")
-      const isRight002 = key.endsWith(".R.002")
-      const baseName = isLeft
-        ? key.replace(".L", "")
-        : isRight
-          ? key.replace(".R", "")
-          : isLeft001
-            ? key.replace(".L.001", "")
-            : isRight001
-              ? key.replace(".R.001", "")
-              : isLeft002
-                ? key.replace(".L.002", "")
-                : isRight002
-                  ? key.replace(".R.002", "")
-                  : key
-
-      if (
-        (isLeft ||
-          isRight ||
-          isLeft001 ||
-          isRight001 ||
-          isLeft002 ||
-          isRight002) &&
-        processedGroups.has(baseName)
-      ) {
-        return
-      }
-
-      const itemDetail: any = this.controlPanelBones[key]
-      const boneScaleSlider = new GUI.Slider()
-      boneScaleSlider.minimum = itemDetail.minimum // 0.5 = smaller
-      boneScaleSlider.maximum = itemDetail.maximum // 3.0 = larger
-      boneScaleSlider.value = itemDetail.value
-      boneScaleSlider.step = itemDetail.step
-      boneScaleSlider.height = "20px"
-      boneScaleSlider.width = "250px"
-
-      const isPaired =
-        isLeft || isRight || isLeft001 || isRight001 || isLeft002 || isRight002
-      const displayName = isPaired ? baseName.replace("DEF-", "") : key
-
-      boneScaleSlider.onValueChangedObservable.add((value) => {
-        if (this.controlPanelBones[key]) {
-          this.controlPanelBones[key].value = value
-          this.controlPanelBones[key].isDirty = true
-        }
-
-        if (isPaired) {
-          const pairedBoneNames = [
-            `${baseName}.L`,
-            `${baseName}.R`,
-            `${baseName}.L.001`,
-            `${baseName}.R.001`,
-            `${baseName}.L.002`,
-            `${baseName}.R.002`,
-          ].filter((name) => name !== key)
-          pairedBoneNames.forEach((pairedBoneName) => {
-            if (this.controlPanelBones[pairedBoneName]) {
-              this.controlPanelBones[pairedBoneName].value = value
-              this.controlPanelBones[pairedBoneName].isDirty = true
-            }
-          })
-        }
-      })
-
-      const boneHeaderLabel = new GUI.TextBlock()
-      boneHeaderLabel.text = displayName
-      boneHeaderLabel.height = "20px"
-      boneHeaderLabel.color = "white"
-      panel.addControl(boneHeaderLabel)
-      panel.addControl(boneScaleSlider)
-
-      if (isPaired) {
-        processedGroups.add(baseName)
-      }
-    })
-
-    this.isControlPanelCreated = true
   }
 
   /**
@@ -363,7 +249,7 @@ export class __Character__ {
 
     // TODO : Remove on production. Add render loop to apply bone scaling for model customization
     this.scene.registerBeforeRender(() => {
-      if (this.characterAssets?.skeletons && this.isControlPanelCreated) {
+      if (this.characterAssets?.skeletons) {
         this.characterAssets.skeletons.forEach((skeleton) => {
           this.applyBoneScales(skeleton)
         })
@@ -436,14 +322,25 @@ export class __Character__ {
    */
   private controlPanelRegisterBones(skeleton: BABYLON.Skeleton): void {
     const keyBones = [
-      "pelvis",
-      "breast",
-      "arm",
-      "thigh",
-      "shoulder",
-      "neck",
-      "head",
-      "forearm",
+      // "pelvis",
+      // "breast",
+      // "arm",
+      // "thigh",
+      // "shoulder",
+      // "neck",
+      // "head",
+      // "forearm",
+
+      // Facial Control
+      "forehead",
+      "nose",
+      "lip",
+      "jaw",
+      "chin",
+      "ear",
+      "brow",
+      "lid",
+      // "eye",
     ]
     const processedPairs: Set<string> = new Set()
 
@@ -459,6 +356,10 @@ export class __Character__ {
         const isRight001 = bone.name.endsWith(".R.001")
         const isLeft002 = bone.name.endsWith(".L.002")
         const isRight002 = bone.name.endsWith(".R.002")
+        const isLeft003 = bone.name.endsWith(".L.003")
+        const isRight003 = bone.name.endsWith(".R.003")
+        const isLeft004 = bone.name.endsWith(".L.004")
+        const isRight004 = bone.name.endsWith(".R.004")
         const baseName = isLeft
           ? bone.name.replace(".L", "")
           : isRight
@@ -471,7 +372,15 @@ export class __Character__ {
                   ? bone.name.replace(".L.002", "")
                   : isRight002
                     ? bone.name.replace(".R.002", "")
-                    : bone.name
+                    : isLeft003
+                      ? bone.name.replace(".L.003", "")
+                      : isRight003
+                        ? bone.name.replace(".R.003", "")
+                        : isLeft004
+                          ? bone.name.replace(".L.004", "")
+                          : isRight004
+                            ? bone.name.replace(".R.004", "")
+                            : bone.name
 
         // This block is used to identify paired body part. But not in used currently
         /**
@@ -492,7 +401,11 @@ export class __Character__ {
             isLeft001 ||
             isRight001 ||
             isLeft002 ||
-            isRight002) &&
+            isRight002 ||
+            isLeft003 ||
+            isRight003 ||
+            isLeft004 ||
+            isRight004) &&
           processedPairs.has(baseName)
         ) {
           return
@@ -519,7 +432,11 @@ export class __Character__ {
           isLeft001 ||
           isRight001 ||
           isLeft002 ||
-          isRight002
+          isRight002 ||
+          isLeft003 ||
+          isRight003 ||
+          isLeft004 ||
+          isRight004
         ) {
           const pairedBoneNames = [
             `${baseName}.L`,
@@ -528,6 +445,10 @@ export class __Character__ {
             `${baseName}.R.001`,
             `${baseName}.L.002`,
             `${baseName}.R.002`,
+            `${baseName}.L.003`,
+            `${baseName}.R.003`,
+            `${baseName}.L.004`,
+            `${baseName}.R.004`,
           ].filter((name) => name !== bone.name)
           pairedBoneNames.forEach((pairedBoneName) => {
             const pairedBone = skeleton.bones.find(
@@ -692,6 +613,16 @@ export class __Character__ {
    */
   public getRoot(): BABYLON.TransformNode | null {
     return this.characterRoot
+  }
+
+  /**
+   * @public
+   * Get registered bones
+   *
+   * @returns
+   */
+  public getRegisteredBones() {
+    return this.controlPanelBones
   }
 
   /**
