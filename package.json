@@ -46,6 +46,9 @@
     ],
     "__&GL/*": [
       "./src/gl/*"
+    ],
+    "__&constants/*": [
+      "./src/constants/*"
     ]
   },
   "homepage": "https://github.com/theycantrevealus/eager-wing#readme",

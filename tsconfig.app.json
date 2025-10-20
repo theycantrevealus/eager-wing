@@ -8,6 +8,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "__&types/*": ["./src/types/*"],
+      "__&constants/*": ["./src/constants/*"],
       "__&interfaces/*": ["./src/interfaces/*"],
       "__&GL/*": ["./src/gl/*"],
       "__&vite/components/*": ["./src/components/*"]
