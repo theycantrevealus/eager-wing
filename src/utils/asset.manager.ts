@@ -1,66 +1,89 @@
 import * as BABYLON from "babylonjs"
+import { Result } from "__&constants/Result"
 
-export class __AssetManager__ {
+/**
+ * @fileoverview Handles shared BabylonJS asset loading and caching.
+ * @module EagerWing___AssetManager
+ */
+
+/**
+ * Manages shared BabylonJS asset loading and caching.
+ *
+ * @example
+ * const manager = new EagerWing___AssetManager(scene);
+ * await manager.loadAll({
+ *   spaceship: "assets/spaceship.glb",
+ *   pilot: "assets/pilot.glb"
+ * });
+ */
+export class EagerWing___AssetManager {
+  /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
+
+  /** Cached asset containers indexed by identifier name. */
   private cache: Map<string, BABYLON.AssetContainer> = new Map()
 
   /**
-   * @constructor
-   * GLTF / GLB assets manager. Use it to async load asset on scene
+   * GLTF / GLB assets manager. Use it to load multiple assets asynchronously.
    *
-   * @param scene - Master scene
+   * @param {BABYLON.Scene} scene - The active BabylonJS scene.
    */
   constructor(scene: BABYLON.Scene) {
     this.scene = scene
   }
 
   /**
-   * @public
-   * @async
-   * Start loading assets
+   * Starts the async loading of multiple assets.
    *
-   * @param { Record<string, string> } assets - List asset to load
+   * @async
+   * @param {Record<string, string>} assets - Map of asset identifiers to file URLs.
+   * @returns {Promise<Result>} Resolves to `Result.Ok` on success, or `Result.Err(error)` on failure.
+   * @throws {Error} If Babylon's AssetsManager encounters a load issue.
    */
-  public async loadAll(assets: Record<string, string>) {
+  public async loadAll(
+    assets: Record<string, string>,
+  ): Promise<Result<string, Error>> {
     try {
       const assetsManager = new BABYLON.AssetsManager(this.scene)
 
       for (const [key, path] of Object.entries(assets)) {
-        const task = assetsManager.addContainerTask(key, "", path, "")
-        task.onSuccess = (task: BABYLON.ContainerAssetTask) => {
-          const container = task.loadedContainer
-          container.meshes.forEach((mesh) => mesh.setEnabled(false))
-          this.cache.set(task.name, container)
+        if (path) {
+          const task = assetsManager.addContainerTask(key, "", path, "")
+          task.onSuccess = (task: BABYLON.ContainerAssetTask) => {
+            const container = task.loadedContainer
+            container.meshes.forEach((mesh) => mesh.setEnabled(false))
+            this.cache.set(task.name, container)
+          }
         }
       }
 
       await assetsManager.loadAsync()
+      return Result.Ok("Asset task executed successfully")
     } catch (error) {
-      console.error(error)
+      return Result.Err(new Error(`[Asset Manager Error] - ${error}`))
     }
   }
 
   /**
-   * @public
-   * @param name - Asset identifier name
+   * Retrieves a cached asset container by name.
    *
-   * @returns { BABYLON.AssetContainer | undefined }
+   * @param {string} name - Asset identifier name.
+   * @returns {BABYLON.AssetContainer | undefined} The cached container, if found.
    */
   public get(name: string): BABYLON.AssetContainer | undefined {
     return this.cache.get(name)
   }
 
   /**
-   * @public
-   * @param name - New instance name for asset
+   * Instantiates a cached asset by name.
    *
-   * @returns { BABYLON.AssetContainer | undefined }
+   * @beta
+   * @param {string} name - Name of the cached asset to instantiate.
+   * @returns {BABYLON.AssetContainer | undefined} A new instance of the asset, or `undefined` if not found.
    */
   public instantiate(name: string): BABYLON.AssetContainer | undefined {
     const original = this.cache.get(name)
     if (!original) return undefined
-
-    // TODO : Check for this instantiate  function
-    // return original.instantiateModelsToScene()
+    // TODO: Implement instantiate logic.
   }
 }
