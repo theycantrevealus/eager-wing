@@ -6,7 +6,13 @@
  * ORG  : Original setup
  */
 
-export const SKELETON_MAP = {
+export const SKELETON_MAP: {
+  [gender: string]: {
+    [key: string]: {
+      identifier: string
+    }
+  }
+} = {
   female: {
     /** [S1–Co4] Sacrum & Coccyx */
     "DEF-spine": { identifier: "SPINE001" },
