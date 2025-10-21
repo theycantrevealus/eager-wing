@@ -5,20 +5,44 @@ import Stats from "stats.js"
 import type { CharacterAttribute } from "__&types/Character"
 import { __CameraHead__ } from "__&GL/camera/head"
 import { __Character__ } from "__&GL/character"
+import { EagerWing___AssetManager } from "../../utils/asset.manager"
 
-export class __CharacterCreation__ {
+/**
+ * @fileoverview Character creation module.
+ * @module EagerWing___CharacterCreation
+ */
+
+/**
+ * Organize character creation to produce configured meta data
+ *
+ * @example
+ * const canvas = document.createElement("canvas")
+ * const creation = new EagerWing___CharacterCreation(canvas);
+ *
+ */
+
+export class EagerWing__CharacterCreation {
+  /** The active BabylonJS scene used for load. */
   private scene: BABYLON.Scene
+
+  /** Engine renderer. */
   private engine: BABYLON.Engine
+
+  /** Camera. */
   private camera: BABYLON.ArcRotateCamera | null = null
+
+  /** Stats. */
   private stats: Stats
   private cameraInstance: __CameraHead__ | null = null
+
+  private assetManager: EagerWing___AssetManager
+
   private characterInstance: __Character__ | null = null
   private GLTFCharacter: BABYLON.AssetContainer | null = null
 
   // Wallpaper background elements
   private bgDiv: HTMLDivElement | null = null
   private bgImg: HTMLImageElement | null = null
-  private wallpaperUrl: string = "./src/assets/wallpaper/character.creation.jpg" // Replace with your image URL (e.g., a vibrant abstract or gradient)
   private defaultRadius: number = 2.0 // Will be set dynamically
 
   // Control Panel
@@ -35,7 +59,7 @@ export class __CharacterCreation__ {
   > = {}
 
   /**
-   * Character Creation Manager
+   * Character Creation Manager initiation. Pass canvas element to organize the render
    *
    * @param { HTMLCanvasElement } canvas - Canvas used for load animation
    */
@@ -51,7 +75,19 @@ export class __CharacterCreation__ {
     })
 
     this.scene = new BABYLON.Scene(this.engine)
-    this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
+    // this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
+    this.scene.clearColor = new BABYLON.Color4(
+      0x0c / 255,
+      0x12 / 255,
+      0x28 / 255,
+      1.0,
+    )
+
+    this.cameraInstance = new __CameraHead__(this.engine, this.scene, "001")
+
+    this.assetManager = new EagerWing___AssetManager(this.scene)
+
+    // ========================================== TIDY BELOW
 
     const material = new BABYLON.StandardMaterial("planeMaterial", this.scene)
     material.diffuseColor = BABYLON.Color3.FromInts(156, 156, 156)
@@ -65,35 +101,35 @@ export class __CharacterCreation__ {
 
     this.stats = new Stats()
     this.stats.showPanel(0)
-    document.body.appendChild(this.stats.dom)
-
-    // Create background div and img
-    this.bgDiv = document.createElement("div")
-    this.bgDiv.style.position = "absolute"
-    this.bgDiv.style.top = "0"
-    this.bgDiv.style.left = "0"
-    this.bgDiv.style.width = "100%"
-    this.bgDiv.style.height = "100%"
-    this.bgDiv.style.overflow = "hidden"
-    this.bgDiv.style.zIndex = "-1"
-    document.body.appendChild(this.bgDiv)
-
-    this.bgImg = document.createElement("img")
-    this.bgImg.src = this.wallpaperUrl
-    this.bgImg.style.width = "100%"
-    this.bgImg.style.height = "100%"
-    this.bgImg.style.objectFit = "cover"
-    this.bgImg.style.transformOrigin = "center center"
-    this.bgDiv.appendChild(this.bgImg)
+    // document.body.appendChild(this.stats.dom)
 
     this.init().then(() => {
       this.animate()
     })
   }
 
+  /**
+   * Init routine
+   * @async
+   * [SECTION-001] - Define list off asset to load
+   */
   async init() {
-    await this.init_character_gltf("../characters/Female/FemaleMeshed.glb")
+    // [SECTION-001]
+    await this.assetManager.loadAll({
+      // Basic character model
+      character: "../characters/Female/Female.Meshed.glb",
 
+      // Load all available hair styles
+      hair_001: "../characters/Female/Hair.001.glb",
+
+      // Load all available clothes
+      clothes: "",
+    })
+
+    const characterAsset = this.assetManager.get("character")
+    if (characterAsset) this.GLTFCharacter = characterAsset
+
+    // TODO : TIDY BELOW
     if (this.GLTFCharacter) {
       this.characterInstance = new __Character__(
         this.scene,
@@ -116,59 +152,66 @@ export class __CharacterCreation__ {
             y: 0,
             z: 0,
           },
+          style: {
+            body: {
+              color: "#ffc095",
+              hair: {
+                asset: this.assetManager.get("hair_001"),
+                color: "#ffc095",
+              },
+              brow: {
+                color: "#ffc095",
+              },
+              eye: {
+                color: "",
+                scale: 0,
+              },
+              blush: {
+                color: "",
+              },
+              lip: {
+                color: "#ff0000",
+              },
+            },
+          },
           speed: 0.1,
           turnSpeed: 0.5,
+          classConfig: {
+            needDebug: false,
+          },
         } satisfies CharacterAttribute,
       )
 
       // Create camera after character is initialized
-      const characterRoot = this.characterInstance.getRoot()
+      const characterRoot = this.characterInstance.getRoot
       if (characterRoot)
-        this.cameraInstance = new __CameraHead__(
-          this.engine,
-          this.scene,
-          "001",
-          characterRoot,
-        )
-      if (this.cameraInstance) {
-        this.camera = this.cameraInstance.getCamera()
-        this.controlPanelBones = this.characterInstance.getRegisteredBones()
-        this.createScaleControlPanel()
-      }
+        if (this.cameraInstance) {
+          const targetBone = this.characterInstance
+            .getBoneByName("SPINE001")
+            ?.getFinalMatrix()
+            .getTranslation()
+
+          this.cameraInstance.focusTo(targetBone ?? characterRoot.position, 5)
+          setTimeout(() => {
+            if (this.cameraInstance && this.characterInstance)
+              this.cameraInstance.focusTo(
+                this.characterInstance
+                  .getBoneByName("TONGUE001")
+                  ?.getFinalMatrix()
+                  .getTranslation() ?? characterRoot.position,
+                0.6,
+              )
+          }, 5000)
+
+          this.camera = this.cameraInstance.getCamera()
+          this.controlPanelBones = this.characterInstance.getRegisteredBones
+          this.createScaleControlPanel()
+        }
       if (this.camera) {
         this.scene.activeCamera = this.camera
-        this.defaultRadius = this.camera.radius // Set default for zoom baseline
       } else {
         console.error("Failed to create camera. Scene may not render.")
       }
-    }
-
-    // Register zoom update for background
-    if (this.camera && this.bgImg) {
-      this.scene.registerBeforeRender(() => {
-        if (this.camera) {
-          const zoomFactor = this.defaultRadius / this.camera.radius
-          this.bgImg!.style.transform = `scale(${zoomFactor})`
-        }
-      })
-    }
-  }
-
-  async init_character_gltf(targetAsset: string): Promise<void> {
-    try {
-      const assetsManager = new BABYLON.AssetsManager(this.scene)
-      const task = assetsManager.addContainerTask(
-        "characterTask",
-        "",
-        targetAsset,
-        "",
-      )
-      await assetsManager.loadAsync()
-      this.GLTFCharacter = task.loadedContainer
-      this.GLTFCharacter.meshes.forEach((mesh) => mesh.setEnabled(false))
-    } catch (error) {
-      console.error("Error loading character GLTF:", error)
-      throw error
     }
   }
 
@@ -176,7 +219,7 @@ export class __CharacterCreation__ {
    * @private
    * Create a GUI panel for controlling bone scales
    *
-   * @returns
+   * @returns { void }
    */
   private createScaleControlPanel(): void {
     if (this.isControlPanelCreated) return
