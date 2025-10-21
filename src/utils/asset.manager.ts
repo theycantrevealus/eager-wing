@@ -1,5 +1,5 @@
 import * as BABYLON from "babylonjs"
-import { Result } from "__&constants/Result"
+import { Result, Success, Failure } from "__&utils/result.pattern"
 
 /**
  * @fileoverview Handles shared BabylonJS asset loading and caching.
@@ -42,7 +42,7 @@ export class EagerWing___AssetManager {
    */
   public async loadAll(
     assets: Record<string, string>,
-  ): Promise<Result<string, Error>> {
+  ): Promise<Result<any, string>> {
     try {
       const assetsManager = new BABYLON.AssetsManager(this.scene)
 
@@ -58,9 +58,9 @@ export class EagerWing___AssetManager {
       }
 
       await assetsManager.loadAsync()
-      return Result.Ok("Asset task executed successfully")
+      return new Success("Asset task executed successfully")
     } catch (error) {
-      return Result.Err(new Error(`[Asset Manager Error] - ${error}`))
+      return new Failure(`[Asset Manager Error] - ${error}`)
     }
   }
 
