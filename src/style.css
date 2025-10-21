@@ -1,3 +1,7 @@
+html {
+  font-family: "Martian Mono" !important;
+}
+
 canvas {
   position: fixed;
   left: 0;
@@ -58,4 +62,65 @@ canvas {
   background-size: 37px 30px;
   filter: invert(100%); /* Inverts black to white */
   background-color: transparent; /* Optional: keeps background transparent or set to any color */
+}
+
+canvas[ref="canvasEl"] {
+  background: #0c1228;
+}
+
+#characterCreation-rightPanel {
+  position: fixed;
+  content: "";
+  z-index: 3;
+  right: 0;
+  top: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+#characterCreation-leftPanel {
+  position: fixed;
+  content: "";
+  z-index: 3;
+  left: 0;
+  top: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+#characterCreation-bottomoverlay {
+  position: fixed;
+  z-index: 2;
+  content: "";
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5%;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 1) 10%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+#characterCreation-topPanel {
+  color: #fff;
+  position: fixed;
+  content: "";
+  z-index: 4;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 10%;
+  background: #000;
 }
