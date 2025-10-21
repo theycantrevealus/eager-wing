@@ -44,11 +44,14 @@
     "__&interfaces/*": [
       "./src/interfaces/*"
     ],
-    "__&GL/*": [
-      "./src/gl/*"
-    ],
     "__&constants/*": [
       "./src/constants/*"
+    ],
+    "__&utils/*": [
+      "./src/utils/*"
+    ],
+    "__&GL/*": [
+      "./src/gl/*"
     ]
   },
   "homepage": "https://github.com/theycantrevealus/eager-wing#readme",

@@ -10,6 +10,7 @@
       "__&types/*": ["./src/types/*"],
       "__&constants/*": ["./src/constants/*"],
       "__&interfaces/*": ["./src/interfaces/*"],
+      "__&utils/*": ["./src/utils/*"],
       "__&GL/*": ["./src/gl/*"],
       "__&vite/components/*": ["./src/components/*"]
     },
