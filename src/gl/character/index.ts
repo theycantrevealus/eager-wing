@@ -1,5 +1,8 @@
 import * as BABYLON from "babylonjs"
-import type { CharacterAttribute } from "__&types/Character"
+import type {
+  CharacterAttribute,
+  CharacterBoneCollection,
+} from "__&types/Character"
 import type { Matrix } from "__&types/Matrix"
 import { EagerWing___Label } from "__&GL/label"
 import type { KeyState } from "__&interfaces/keyboard"
@@ -11,7 +14,7 @@ import { SKELETON_MAP } from "__&constants/map.skeleton"
  *
  * @class
  */
-export class __Character__ {
+export class EagerWing___Character {
   /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
 
@@ -34,9 +37,7 @@ export class __Character__ {
   protected isLoaded: boolean = false
 
   /** Registered humanoid bones formatted with humanly name */
-  private bonesCollection: {
-    [key: string]: { bone: BABYLON.Bone; minimum: number; maximum: number }
-  } = {}
+  private bonesCollection: CharacterBoneCollection = {}
 
   /**
    * TODO : TIDY BELOW
@@ -173,7 +174,9 @@ export class __Character__ {
           clone.isVisible = true
           clone.setEnabled(true)
           clone.scaling.scaleInPlace(
-            this.characterAttribute.information.dimension.scale,
+            this.characterAttribute.information.dimension
+              ? this.characterAttribute.information.dimension.scale
+              : 0,
           )
 
           // if (mesh.skeleton) {
@@ -201,17 +204,17 @@ export class __Character__ {
       .filter((m) => m !== null)
 
     /** Proceed character hair. */
-    const headMesh = this.scene.getMeshByName(MESH_NAME.Head)
-    const hairMesh = this.characterAttribute.style.body.hair.asset?.meshes[0]
-    if (headMesh && hairMesh && headMesh.material) {
-      const realHair = hairMesh.getChildMeshes()[0] || hairMesh
-      hairMesh.parent = this.characterRoot
+    // const headMesh = this.scene.getMeshByName(MESH_NAME.Head)
+    // const hairMesh = this.characterAttribute.style.body.hair.asset?.meshes[0]
+    // if (headMesh && hairMesh && headMesh.material) {
+    //   const realHair = hairMesh.getChildMeshes()[0] || hairMesh
+    //   hairMesh.parent = this.characterRoot
 
-      headMesh.position.set(0, 0.915, 0)
-      realHair.rotationQuaternion = null
-      realHair.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL)
-      headMesh.scaling.set(0.75, 0.75, 0.75)
-    }
+    //   headMesh.position.set(0, 0.915, 0)
+    //   realHair.rotationQuaternion = null
+    //   realHair.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL)
+    //   headMesh.scaling.set(0.75, 0.75, 0.75)
+    // }
 
     /** Proceed character body */
     const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
@@ -375,7 +378,11 @@ export class __Character__ {
           SKELETON_MAP.female[bone.name.toString()]?.identifier
         if (identifier)
           this.bonesCollection[identifier] = {
-            bone: bone,
+            name: SKELETON_MAP.female[bone.name.toString()]?.name ?? "",
+            configurable:
+              SKELETON_MAP.female[bone.name.toString()]?.configurable ?? false,
+            group: SKELETON_MAP.female[bone.name.toString()]?.group ?? "",
+            // bone: bone, Removed due to CPU lead on ISSUE (https://github.com/theycantrevealus/eager-wing/issues/4)
             minimum: 0,
             maximum: 0,
           }
@@ -387,7 +394,7 @@ export class __Character__ {
    * Get bone by name
    *
    * @param { string } name - Mapped name of bone on SKELETON_MAP
-   *
+   * @deprecated
    * @returns { BABYLON.Bone | null }
    */
   public getBoneByName(name: string): BABYLON.Bone | null {
@@ -830,6 +837,10 @@ export class __Character__ {
 
   get getRegisteredBones() {
     return this.controlPanelBones
+  }
+
+  get getBoneCollection() {
+    return this.bonesCollection
   }
 
   /**
