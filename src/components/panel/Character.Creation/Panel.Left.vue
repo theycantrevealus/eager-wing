@@ -21,6 +21,7 @@
               <div class="selection-box-container">
                 <div class="selection-box" v-for="value in skin_color">
                   <div
+                    v-on:click="changeSkinTone(value, $event)"
                     class="custom-color"
                     :style="{ background: value }"
                   ></div>
@@ -111,6 +112,7 @@ export default defineComponent({
       ],
     }
   },
+  emits: ["change-skin-tone", "change-hair-dye"],
   created() {
     this.images = import.meta.glob("@assets/clothes/*", {
       eager: true,
@@ -131,6 +133,9 @@ export default defineComponent({
         return entry[1].default
       }
       return ""
+    },
+    changeSkinTone(color: string, event: MouseEvent) {
+      this.$emit("change-skin-tone", color, event)
     },
   },
 })

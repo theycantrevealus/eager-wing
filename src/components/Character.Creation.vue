@@ -2,7 +2,7 @@
   <div class="scene-container">
     <canvas ref="canvasEl" class="w-full h-full"></canvas>
     <top-panel ref="topPanelCreation" @focus-change="handleFocus"></top-panel>
-    <left-panel></left-panel>
+    <left-panel @change-skin-tone="handleSkinTone"></left-panel>
     <div id="characterCreation-rightPanel"></div>
   </div>
 </template>
@@ -31,6 +31,9 @@ export default defineComponent({
       if (target === "head") this.core?.focusHead()
       if (target === "body") this.core?.focusBody()
       console.log("Event:", event)
+    },
+    handleSkinTone(color: string) {
+      this.core?.applySkinTone(color)
     },
   },
   beforeUnmount() {

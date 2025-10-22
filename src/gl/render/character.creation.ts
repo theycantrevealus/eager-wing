@@ -226,6 +226,10 @@ export class EagerWing__CharacterCreation {
     }
   }
 
+  public applySkinTone(color: string) {
+    this.characterInstance?.applySkinTone(color)
+  }
+
   /**
    * @private
    * Create a GUI panel for controlling bone scales

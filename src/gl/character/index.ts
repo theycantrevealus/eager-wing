@@ -456,6 +456,15 @@ export class __Character__ {
     }
   }
 
+  public applySkinTone(color: string) {
+    const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
+      this.scene.getMeshByName(MESH_NAME.Body)
+    if (bodyMeshes) {
+      const bodyMaterial = bodyMeshes.material as BABYLON.PBRMaterial
+      bodyMaterial.albedoColor = BABYLON.Color3.FromHexString(color)
+    }
+  }
+
   /**
    * @public
    * Model load state asyncronously

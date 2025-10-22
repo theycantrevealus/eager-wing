@@ -7,3 +7,14 @@
     </router-view>
   </div>
 </template>
+<script lang="ts">
+import { defineComponent } from "vue"
+import pointerCur from "@assets/cursor/normal.cur"
+
+export default defineComponent({
+  name: "Builder",
+  mounted() {
+    document.body.style.cursor = `url(${pointerCur}), auto`
+  },
+})
+</script>
