@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/theycantrevealus/eager-wing/compare/v1.3.0...v1.3.1) (2025-10-22)
+
+
+### Bug Fixes
+
+* resource leak cause of caching bone object from assets skeleton on character init ([dd8dedc](https://github.com/theycantrevealus/eager-wing/commit/dd8dedcdc3bbf910f5a35dd2a4629e9ea420ebc8))
+
 # [1.3.0](https://github.com/theycantrevealus/eager-wing/compare/v1.2.0...v1.3.0) (2025-10-22)
 
 
