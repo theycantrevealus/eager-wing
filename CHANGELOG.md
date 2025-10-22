@@ -1,3 +1,14 @@
+# [1.3.0](https://github.com/theycantrevealus/eager-wing/compare/v1.2.0...v1.3.0) (2025-10-22)
+
+
+### Features
+
+* asset manager ([03a813d](https://github.com/theycantrevealus/eager-wing/commit/03a813d02cdbeacca17aff3dc26383aa35dfff5c))
+* character creation change skin tone ([13bc442](https://github.com/theycantrevealus/eager-wing/commit/13bc442b9a5d8b732b8037c802f771d9a94a8ed9))
+* character initiate module ([0e33520](https://github.com/theycantrevealus/eager-wing/commit/0e335203741ff5a2893a1733383df5ee21bbc495))
+* character management initiate module ([7a29d8b](https://github.com/theycantrevealus/eager-wing/commit/7a29d8ba1c7e6c9fcdda0cceb3fc000628876827))
+* style for character creation panel init ([4007140](https://github.com/theycantrevealus/eager-wing/commit/400714004683f64b1f3c217effcfde35e78e573d))
+
 # [1.2.0](https://github.com/theycantrevealus/eager-wing/compare/v1.1.0...v1.2.0) (2025-10-19)
 
 
