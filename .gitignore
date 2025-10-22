@@ -2,4 +2,9 @@ node_modules/
 dist/
 *.log
 public/
-src/assets/
+src/assets/character/
+src/assets/clothes/
+src/assets/font/
+src/assets/job/
+src/assets/wallpaper/
+src/assets/*.svg

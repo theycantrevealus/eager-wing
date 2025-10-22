@@ -39,6 +39,7 @@ export class EagerWing__CharacterCreation {
 
   private characterInstance: __Character__ | null = null
   private GLTFCharacter: BABYLON.AssetContainer | null = null
+  private characterRoot: BABYLON.TransformNode | null = null
 
   // Wallpaper background elements
   private bgDiv: HTMLDivElement | null = null
@@ -184,34 +185,44 @@ export class EagerWing__CharacterCreation {
 
       // Create camera after character is initialized
       const characterRoot = this.characterInstance.getRoot
-      if (characterRoot)
-        if (this.cameraInstance) {
-          const targetBone = this.characterInstance
-            .getBoneByName("SPINE001")
-            ?.getFinalMatrix()
-            .getTranslation()
+      if (this.cameraInstance && characterRoot) {
+        this.characterRoot = characterRoot
+        this.focusBody()
 
-          this.cameraInstance.focusTo(targetBone ?? characterRoot.position, 5)
-          setTimeout(() => {
-            if (this.cameraInstance && this.characterInstance)
-              this.cameraInstance.focusTo(
-                this.characterInstance
-                  .getBoneByName("TONGUE001")
-                  ?.getFinalMatrix()
-                  .getTranslation() ?? characterRoot.position,
-                0.6,
-              )
-          }, 5000)
+        this.camera = this.cameraInstance.getCamera()
+        this.controlPanelBones = this.characterInstance.getRegisteredBones
+        this.createScaleControlPanel()
+      }
 
-          this.camera = this.cameraInstance.getCamera()
-          this.controlPanelBones = this.characterInstance.getRegisteredBones
-          this.createScaleControlPanel()
-        }
       if (this.camera) {
         this.scene.activeCamera = this.camera
       } else {
         console.error("Failed to create camera. Scene may not render.")
       }
+    }
+  }
+
+  public focusHead() {
+    if (this.cameraInstance && this.characterInstance && this.characterRoot) {
+      this.cameraInstance.focusTo(
+        this.characterInstance
+          .getBoneByName("TONGUE001")
+          ?.getFinalMatrix()
+          .getTranslation() ?? this.characterRoot.position,
+        0.6,
+      )
+    }
+  }
+
+  public focusBody() {
+    if (this.cameraInstance && this.characterInstance && this.characterRoot) {
+      this.cameraInstance.focusTo(
+        this.characterInstance
+          .getBoneByName("SPINE001")
+          ?.getFinalMatrix()
+          .getTranslation() ?? this.characterRoot.position,
+        5,
+      )
     }
   }
 

@@ -1,0 +1,55 @@
+#characterCreation-topPanel {
+  color: #fff;
+  position: fixed;
+  content: "";
+  z-index: 4;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 10%;
+  background: #000;
+}
+
+#characterCreation-topPanel .segment-container {
+  position: absolute;
+  display: block;
+  width: 100%;
+  height: 50%;
+  top: 25%;
+  display: flex;
+  justify-content: center; /* centers horizontally */
+  align-items: center; /* centers vertically */
+  gap: 1rem;
+}
+
+#characterCreation-topPanel .segment-container .segment {
+  width: 100px;
+  padding: 20px 100px;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  font-size: 10pt;
+  letter-spacing: 10px;
+  line-height: 2;
+}
+
+#characterCreation-topPanel .segment-container .segment.active {
+  position: relative;
+  color: rgba(255, 155, 26, 0.7);
+}
+
+#characterCreation-topPanel .segment-container .segment.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 20px;
+  background: radial-gradient(
+    ellipse at bottom,
+    rgba(255, 155, 26, 0.7),
+    transparent 70%
+  );
+  filter: blur(8px);
+  z-index: -1;
+}
