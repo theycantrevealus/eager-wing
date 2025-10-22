@@ -9,6 +9,7 @@ html,
 body {
   background: #282828;
   color: #fff;
+  cursor: url("./assets/cursor/normal.cur"), auto;
   font-size: 8pt;
   font-family: "Martian Mono" !important;
 }
