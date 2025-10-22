@@ -7,20 +7,33 @@
     </div>
     <div class="segment-container">
       <div
-        class="segment"
+        class="segment active"
         id="segment-head"
         v-on:click="menuClick('head', $event)"
       >
-        Head
+        HEAD
       </div>
       <div
-        class="segment active"
-        id="segment-body"
-        v-on:click="menuClick('body', $event)"
+        class="segment"
+        id="segment-upper"
+        v-on:click="menuClick('upper', $event)"
       >
-        Body
+        UPPER
       </div>
-      <div class="segment">Preview</div>
+      <div
+        class="segment"
+        id="segment-lower"
+        v-on:click="menuClick('lower', $event)"
+      >
+        LOWER
+      </div>
+      <div
+        class="segment"
+        id="segment-preview"
+        v-on:click="menuClick('preview', $event)"
+      >
+        PREVIEW
+      </div>
     </div>
   </div>
 </template>
