@@ -3,9 +3,12 @@ import * as GUI from "babylonjs-gui"
 import "babylonjs-loaders"
 import Stats from "stats.js"
 import type { CharacterAttribute } from "__&types/Character"
-import { __CameraHead__ } from "__&GL/camera/head"
-import { __Character__ } from "__&GL/character"
+import { EagerWing___CameraCreation } from "__&GL/camera/creation"
+import { EagerWing___Character } from "__&GL/character"
 import { EagerWing___AssetManager } from "../../utils/asset.manager"
+import type { StoreDefinition } from "pinia"
+import type { CharacterCreationStore } from "../../stores/creation"
+import { SKELETON_MAP } from "__&constants/map.skeleton"
 
 /**
  * @fileoverview Character creation module.
@@ -21,7 +24,7 @@ import { EagerWing___AssetManager } from "../../utils/asset.manager"
  *
  */
 
-export class EagerWing__CharacterCreation {
+export class EagerWing___CharacterCreation {
   /** The active BabylonJS scene used for load. */
   private scene: BABYLON.Scene
 
@@ -33,11 +36,14 @@ export class EagerWing__CharacterCreation {
 
   /** Stats. */
   private stats: Stats
-  private cameraInstance: __CameraHead__ | null = null
+  private cameraInstance: EagerWing___CameraCreation | null = null
 
   private assetManager: EagerWing___AssetManager
 
-  private characterInstance: __Character__ | null = null
+  /** Pinia Stpre */
+  private store: CharacterCreationStore | null = null
+
+  private characterInstance: EagerWing___Character | null = null
   private GLTFCharacter: BABYLON.AssetContainer | null = null
   private characterRoot: BABYLON.TransformNode | null = null
 
@@ -64,7 +70,12 @@ export class EagerWing__CharacterCreation {
    *
    * @param { HTMLCanvasElement } canvas - Canvas used for load animation
    */
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    characterAttribute: CharacterAttribute,
+    store: CharacterCreationStore, // TODO : What is the type lol
+  ) {
+    this.store = store
     canvas.style.width = "100%"
     canvas.style.height = "100%"
     canvas.id = "renderCanvas"
@@ -84,14 +95,15 @@ export class EagerWing__CharacterCreation {
       1.0,
     )
 
-    this.cameraInstance = new __CameraHead__(this.engine, this.scene, "001")
+    this.cameraInstance = new EagerWing___CameraCreation(
+      this.engine,
+      this.scene,
+      "001",
+    )
 
     this.assetManager = new EagerWing___AssetManager(this.scene)
 
     // ========================================== TIDY BELOW
-
-    const material = new BABYLON.StandardMaterial("planeMaterial", this.scene)
-    material.diffuseColor = BABYLON.Color3.FromInts(156, 156, 156)
 
     const light = new BABYLON.HemisphericLight(
       "hemiLight",
@@ -104,7 +116,9 @@ export class EagerWing__CharacterCreation {
     this.stats.showPanel(0)
     // document.body.appendChild(this.stats.dom)
 
-    this.init().then(() => {
+    this.camera = this.cameraInstance.getCamera()
+
+    this.init(characterAttribute).then(() => {
       this.animate()
     })
   }
@@ -114,7 +128,7 @@ export class EagerWing__CharacterCreation {
    * @async
    * [SECTION-001] - Define list off asset to load
    */
-  async init() {
+  async init(characterAttribute: CharacterAttribute) {
     // [SECTION-001]
     await this.assetManager.loadAll({
       // Basic character model
@@ -130,103 +144,141 @@ export class EagerWing__CharacterCreation {
     const characterAsset = this.assetManager.get("character")
     if (characterAsset) this.GLTFCharacter = characterAsset
 
-    // TODO : TIDY BELOW
     if (this.GLTFCharacter) {
-      this.characterInstance = new __Character__(
+      this.characterInstance = new EagerWing___Character(
         this.scene,
         this.GLTFCharacter,
-        {
-          modelId: "001",
-          information: {
-            name: "TATANG 1",
-            level: 1,
-            health: 100,
-            mana: 100,
-            job: "warrior",
-            race: "asmodian",
-            dimension: {
-              scale: 1,
-            },
-          },
-          position: {
-            x: 0,
-            y: 0,
-            z: 0,
-          },
-          style: {
-            body: {
-              color: "#ffc095",
-              hair: {
-                asset: this.assetManager.get("hair_001"),
-                color: "#ffc095",
-              },
-              brow: {
-                color: "#ffc095",
-              },
-              eye: {
-                color: "",
-                scale: 0,
-              },
-              blush: {
-                color: "",
-              },
-              lip: {
-                color: "#ff0000",
-              },
-            },
-          },
-          speed: 0.1,
-          turnSpeed: 0.5,
-          classConfig: {
-            needDebug: false,
-          },
-        } satisfies CharacterAttribute,
+        characterAttribute,
       )
 
-      // Create camera after character is initialized
       const characterRoot = this.characterInstance.getRoot
       if (this.cameraInstance && characterRoot) {
         this.characterRoot = characterRoot
-        this.focusBody()
-
-        this.camera = this.cameraInstance.getCamera()
-        this.controlPanelBones = this.characterInstance.getRegisteredBones
-        this.createScaleControlPanel()
+        if (this.store)
+          this.store.updateBones(this.characterInstance.getBoneCollection)
+        this.focusHead()
       }
 
-      if (this.camera) {
-        this.scene.activeCamera = this.camera
-      } else {
-        console.error("Failed to create camera. Scene may not render.")
-      }
+      this.scene.activeCamera = this.camera
     }
   }
 
-  public focusHead() {
+  // TODO : TIDY BELOW
+
+  public getCharacterBoneCollection() {
+    return this.characterInstance?.getBoneCollection
+  }
+
+  /**
+   * Move and focus camera for head customization
+   *
+   * @returns {void}
+   */
+  public focusHead(): void {
     if (this.cameraInstance && this.characterInstance && this.characterRoot) {
+      const boneName = Object.entries(SKELETON_MAP.female ?? "").find(
+        ([key, value]) => value.identifier === "TONGUE001",
+      )?.[0]
+
+      if (boneName) {
+      }
+
+      const findBone = boneName
+        ? (this.scene
+            .getBoneByName(boneName)
+            ?.getFinalMatrix()
+            .getTranslation() ?? this.characterRoot.position)
+        : this.characterRoot.position
+
+      this.cameraInstance.focusTo(findBone, 0.6)
+    }
+  }
+
+  /**
+   * Move and focus camera for body customization
+   *
+   * @returns {void}
+   */
+  public focusUpper(): void {
+    if (this.cameraInstance && this.characterInstance && this.characterRoot) {
+      const boneName = Object.entries(SKELETON_MAP.female ?? "").find(
+        ([key, value]) => value.identifier === "SPINE004",
+      )?.[0]
+
+      if (boneName) {
+      }
+
+      const findBone = boneName
+        ? (this.scene
+            .getBoneByName(boneName)
+            ?.getFinalMatrix()
+            .getTranslation() ?? this.characterRoot.position)
+        : this.characterRoot.position
+
+      this.cameraInstance.focusTo(findBone, 1)
+    }
+  }
+
+  /**
+   * Move and focus camera for lower body customization
+   *
+   * @returns {void}
+   */
+  public focusLower(): void {
+    if (this.cameraInstance && this.characterInstance && this.characterRoot) {
+      const boneName = Object.entries(SKELETON_MAP.female ?? "").find(
+        ([key, value]) => value.identifier === "SPINE001",
+      )?.[0]
+
+      if (boneName) {
+      }
+
+      const findBone = boneName
+        ? (this.scene
+            .getBoneByName(boneName)
+            ?.getFinalMatrix()
+            .getTranslation() ?? this.characterRoot.position)
+        : this.characterRoot.position
+
       this.cameraInstance.focusTo(
-        this.characterInstance
-          .getBoneByName("TONGUE001")
-          ?.getFinalMatrix()
-          .getTranslation() ?? this.characterRoot.position,
-        0.6,
+        findBone.add(new BABYLON.Vector3(0, -0.52, 0)),
+        1.2,
       )
     }
   }
 
-  public focusBody() {
+  /**
+   * Move and focus camera for lower body customization
+   *
+   * @returns {void}
+   */
+  public focusFull(): void {
     if (this.cameraInstance && this.characterInstance && this.characterRoot) {
-      this.cameraInstance.focusTo(
-        this.characterInstance
-          .getBoneByName("SPINE001")
-          ?.getFinalMatrix()
-          .getTranslation() ?? this.characterRoot.position,
-        5,
-      )
+      const boneName = Object.entries(SKELETON_MAP.female ?? "").find(
+        ([key, value]) => value.identifier === "SPINE001",
+      )?.[0]
+
+      if (boneName) {
+      }
+
+      const findBone = boneName
+        ? (this.scene
+            .getBoneByName(boneName)
+            ?.getFinalMatrix()
+            .getTranslation() ?? this.characterRoot.position)
+        : this.characterRoot.position
+
+      this.cameraInstance.focusTo(findBone, 5)
     }
   }
 
-  public applySkinTone(color: string) {
+  /**
+   * Update skin tone from control panel
+   *
+   * @param {string} color - Hex color string
+   * @returns {void}
+   */
+  public applySkinTone(color: string): void {
     this.characterInstance?.applySkinTone(color)
   }
 

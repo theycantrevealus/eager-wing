@@ -82,6 +82,7 @@ canvas[ref="canvasEl"] {
 
 #characterCreation-rightPanel {
   position: fixed;
+  padding-top: 6%;
   content: "";
   z-index: 3;
   right: 0;
@@ -212,4 +213,47 @@ table.form-container tr td::after {
   bottom: -4.75px;
   left: -5.25px;
   line-height: 1;
+}
+
+/* SLIDER */
+.slidecontainer {
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 80%;
+  height: 5px;
+  background: #ccc;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background: #5c8edb;
+  border-radius: 100%;
+  border: solid 5px #fff;
+  cursor: url("./assets/cursor/link.cur"), auto;
+  box-shadow: 0 0 60px 20px rgba(128, 0, 255, 0.5);
+}
+
+.slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  background: #5c8edb;
+  border-radius: 100%;
+  border: solid 5px #fff;
+  cursor: url("./assets/cursor/link.cur"), auto;
+  box-shadow: 0 0 60px 20px rgba(128, 0, 255, 0.5);
 }
