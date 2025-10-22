@@ -44,6 +44,12 @@
     "__&interfaces/*": [
       "./src/interfaces/*"
     ],
+    "__&constants/*": [
+      "./src/constants/*"
+    ],
+    "__&utils/*": [
+      "./src/utils/*"
+    ],
     "__&GL/*": [
       "./src/gl/*"
     ]

@@ -1,8 +1,10 @@
 import * as BABYLON from "babylonjs"
 import type { CharacterAttribute } from "__&types/Character"
 import type { Matrix } from "__&types/Matrix"
-import { __Label__ } from "__&GL/label"
+import { EagerWing___Label } from "__&GL/label"
 import type { KeyState } from "__&interfaces/keyboard"
+import { MESH_NAME } from "__&constants/map.mesh"
+import { SKELETON_MAP } from "__&constants/map.skeleton"
 
 /**
  * Character Management
@@ -10,25 +12,44 @@ import type { KeyState } from "__&interfaces/keyboard"
  * @class
  */
 export class __Character__ {
-  /** @private */
+  /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
 
-  /** @private */
-  private label: __Label__
+  /** Label manager. */
+  private label: EagerWing___Label
 
-  /** @private */
-  private characterAssets: BABYLON.AssetContainer | null = null
-
-  /** @private */
+  /** Character attribute contains information, render rule, style, init position, etc. */
   private characterAttribute: CharacterAttribute
 
+  /** Shared asset from main scene. */
+  private characterAssets: BABYLON.AssetContainer | null = null
+
+  /** Character object after apply attribute. */
   private characterRoot: BABYLON.TransformNode | null = null
 
+  /** Character processing promise. */
+  private loadPromise: Promise<void>
+
+  /** Character processing promise result. */
+  protected isLoaded: boolean = false
+
+  /** Registered humanoid bones formatted with humanly name */
+  private bonesCollection: {
+    [key: string]: { bone: BABYLON.Bone; minimum: number; maximum: number }
+  } = {}
+
+  /**
+   * TODO : TIDY BELOW
+   *
+   *
+   *
+   *
+   *
+   *
+   *
+   */
   private labelPlane: BABYLON.Mesh | null = null
   private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
-
-  protected isLoaded: boolean = false
-  private loadPromise: Promise<void>
 
   public animations: Record<string, BABYLON.AnimationGroup> = {}
 
@@ -63,6 +84,7 @@ export class __Character__ {
   // private runSpeed: number = 0.3
 
   /**
+   * @constructor
    * Create character instance. Handle the character customizations, animations, motions, and else.
    * All the assets is shared for same character model: NPC, other players, etc
    *
@@ -77,15 +99,21 @@ export class __Character__ {
   ) {
     this.scene = scene
 
-    // scene.debugLayer.show({
-    //   embedMode: false,
-    //   overlay: true,
-    //   handleResize: true,
-    // })
+    /** If debugging character object is needed */
+    if (characterAttribute.classConfig.needDebug)
+      scene.debugLayer.show({
+        embedMode: false,
+        overlay: true,
+        handleResize: true,
+      })
 
-    this.label = new __Label__(scene)
+    /** Initiate label manager. */
+    this.label = new EagerWing___Label(scene)
+
+    /** Init attribute for character configuration. */
     this.characterAttribute = characterAttribute
 
+    /** Load asset asyncronously. */
     this.loadPromise = this.initCharacter(
       characterAttribute.position,
       characterSharedAsset,
@@ -93,11 +121,312 @@ export class __Character__ {
   }
 
   /**
+   * @protected
+   * @async
+   * Character model initiate from shared asset
+   *   1. Clone available skeleton
+   *   2. Config style attribute
+   *
+   * @param { Matrix } position - Character set position
+   * @param { BABYLON.AssetContainer } asset - Shared asset
+   *
+   * @returns { void }
+   */
+  protected async initCharacter(
+    position: Matrix,
+    asset: BABYLON.AssetContainer,
+  ): Promise<void> {
+    if (!asset) throw new Error("GLTFCharacterTemplate not initialized")
+
+    this.characterAssets = new BABYLON.AssetContainer(this.scene)
+
+    this.characterRoot = new BABYLON.TransformNode(
+      `character_root_${this.characterAttribute.modelId}`,
+      this.scene,
+    )
+
+    this.characterRoot.position = new BABYLON.Vector3(
+      position.x,
+      position.y,
+      position.z,
+    )
+
+    /** Clone skeletons. */
+    this.characterAssets.skeletons = asset.skeletons.map((skeleton) =>
+      skeleton.clone(`${skeleton.name}_${this.characterAttribute.modelId}`),
+    )
+
+    if (this.characterAssets.skeletons[0]) {
+      // this.logBones("DEF-", this.characterAssets.skeletons[0])
+      this.registerBone("DEF-", this.characterAssets.skeletons[0])
+    }
+
+    /** Clone meshes. */
+    this.characterAssets.meshes = asset.meshes
+      .map((mesh) => {
+        const clone = mesh.clone(
+          `${mesh.name}_${this.characterAttribute.modelId}`,
+          null,
+        )
+
+        if (clone) {
+          clone.isVisible = true
+          clone.setEnabled(true)
+          clone.scaling.scaleInPlace(
+            this.characterAttribute.information.dimension.scale,
+          )
+
+          // if (mesh.skeleton) {
+          //   const clonedSkeleton = this.characterAssets!.skeletons.find((s) =>
+          //     s.name.includes(mesh.skeleton!.name.split("_")[0] ?? ""),
+          //   )
+          //   if (clonedSkeleton) {
+          //     clone.skeleton = clonedSkeleton
+
+          //     // TODO : Bone registration with auto paired left and right
+          //     // this.controlPanelRegisterBones(clonedSkeleton)
+
+          //     clonedSkeleton.computeAbsoluteTransforms()
+          //     clonedSkeleton.prepare()
+          //   }
+          // }
+        }
+        return clone
+      })
+      .filter((m): m is BABYLON.AbstractMesh => m !== null)
+
+    /** Clone materials. */
+    this.characterAssets.materials = asset.materials
+      .map((mat) => mat.clone(`${mat.name}_${this.characterAttribute.modelId}`))
+      .filter((m) => m !== null)
+
+    /** Proceed character hair. */
+    const headMesh = this.scene.getMeshByName(MESH_NAME.Head)
+    const hairMesh = this.characterAttribute.style.body.hair.asset?.meshes[0]
+    if (headMesh && hairMesh && headMesh.material) {
+      const realHair = hairMesh.getChildMeshes()[0] || hairMesh
+      hairMesh.parent = this.characterRoot
+
+      headMesh.position.set(0, 0.915, 0)
+      realHair.rotationQuaternion = null
+      realHair.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL)
+      headMesh.scaling.set(0.75, 0.75, 0.75)
+    }
+
+    /** Proceed character body */
+    const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
+      this.scene.getMeshByName(MESH_NAME.Body)
+    if (bodyMeshes) {
+      const bodyMaterial = bodyMeshes.material as BABYLON.PBRMaterial
+      bodyMaterial.albedoColor = BABYLON.Color3.FromHexString(
+        this.characterAttribute.style.body.color,
+      )
+    }
+
+    /** Proceed character brow */
+    const browMeshes: BABYLON.Nullable<BABYLON.AbstractMesh>[] = [
+      this.scene.getMeshByName(MESH_NAME.Brow.Right),
+      this.scene.getMeshByName(MESH_NAME.Brow.Left),
+    ]
+
+    browMeshes.forEach((browMeshes) => {
+      if (browMeshes) {
+        const browMaterial = browMeshes.material as BABYLON.PBRMaterial
+        browMaterial.albedoColor = BABYLON.Color3.FromHexString(
+          this.characterAttribute.style.body.brow.color,
+        )
+      }
+    })
+
+    /** Proceed character eye iris. */
+    const eyeIrisMeshes = [
+      this.scene.getMeshByName(MESH_NAME.Eye.Right.Iris),
+      this.scene.getMeshByName(MESH_NAME.Eye.Left.Iris),
+    ]
+
+    const tex = new BABYLON.Texture(
+      "./src/assets/character/eyes/iris.png",
+      this.scene,
+    )
+    tex.uScale = 0.5
+    tex.vScale = 0.5
+    tex.uOffset = (1 - tex.uScale) / 2
+    tex.vOffset = (1 - tex.vScale) / 2
+
+    const irisMat = new BABYLON.StandardMaterial("irisMat", this.scene)
+    irisMat.diffuseTexture = tex
+    irisMat.useAlphaFromDiffuseTexture = true
+    irisMat.backFaceCulling = false
+    irisMat.diffuseColor = new BABYLON.Color3(0.5, 0.8, 1.0)
+
+    eyeIrisMeshes.forEach((irisMeshes) => {
+      if (irisMeshes) {
+        irisMeshes.material = irisMat
+      }
+    })
+
+    /** Proceed character lip. */
+    const lipsMesh = this.scene.getMeshByName(MESH_NAME.Lip)
+    if (lipsMesh && lipsMesh.material instanceof BABYLON.PBRMaterial) {
+      const material = lipsMesh.material as BABYLON.PBRMaterial
+      material.albedoColor = BABYLON.Color3.FromHexString(
+        this.characterAttribute.style.body.lip.color,
+      )
+    }
+
+    /**
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+
+
+
+
+
+
+
+     */
+
+    // TODO : Currently stop animations to test if they override scaling. Will done on animation management branch
+    this.characterAssets.animationGroups.forEach((ag) => {
+      ag.stop()
+      ag.onAnimationGroupPlayObservable.clear() // Prevent restarts
+      ag.onAnimationGroupLoopObservable.clear()
+    })
+
+    // TODO : Clone animations
+    /*this.characterAssets.animationGroups = asset.animationGroups.map(
+      (group) => {
+        const animateClone = group.clone(
+          `${group.name}_${this.characterAttribute.modelId}`,
+          (target) => {
+            return (
+              this.characterAssets!.meshes.find((m) =>
+                m.name.includes(target.name),
+              ) || target
+            )
+          },
+        )
+        this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
+          animateClone
+        return animateClone
+      },
+    )*/
+
+    /** Set up character root : So the instance could be re-use or handle from other spot. */
+
+    this.characterAssets.meshes.forEach((mesh) => {
+      console.log(mesh.name)
+      mesh.setParent(this.characterRoot)
+      mesh.position.set(0, 0, 0)
+    })
+
+    this.characterAssets.addAllToScene()
+
+    /** Provide label for character such like nickname or else. */
+    ;({ plane: this.labelPlane, observer: this.labelUpdateObserver } =
+      this.label.makeLabel(
+        this.characterAttribute.information.name,
+        this.characterRoot,
+      ))
+
+    // TODO : Remove on production. Add render loop to apply bone scaling for model customization (From slider panel)
+    // this.scene.registerBeforeRender(() => {
+    //   if (this.characterAssets?.skeletons) {
+    //     this.characterAssets.skeletons.forEach((skeleton) => {
+    //       this.applyBoneScales(skeleton)
+    //     })
+    //   }
+    // })
+
+    if (this.characterRoot && this.characterAttribute.classConfig.needDebug) {
+      const axes = new BABYLON.AxesViewer(this.scene, 1)
+      axes.xAxis.parent = this.characterRoot
+      axes.yAxis.parent = this.characterRoot
+      axes.zAxis.parent = this.characterRoot
+    }
+
+    this.isLoaded = true
+  }
+
+  /**
+   * Register all bones to Eager Wing standard so it could identified easier
+   *
+   * @param { BABYLON.Skeleton } skeleton - Skeleton from model to process
+   *
+   * @returns { void }
+   */
+  private registerBone(prefix: string = "", skeleton: BABYLON.Skeleton): void {
+    const defBones =
+      prefix === ""
+        ? skeleton.bones
+        : skeleton.bones.filter((bone) => bone.name.startsWith(prefix))
+
+    defBones.forEach((bone) => {
+      if (SKELETON_MAP.female) {
+        const identifier: string | undefined =
+          SKELETON_MAP.female[bone.name.toString()]?.identifier
+        if (identifier)
+          this.bonesCollection[identifier] = {
+            bone: bone,
+            minimum: 0,
+            maximum: 0,
+          }
+      }
+    })
+  }
+
+  /**
+   * Get bone by name
+   *
+   * @param { string } name - Mapped name of bone on SKELETON_MAP
+   *
+   * @returns { BABYLON.Bone | null }
+   */
+  public getBoneByName(name: string): BABYLON.Bone | null {
+    return this.bonesCollection[name]?.bone ?? null
+  }
+
+  /**
+   * Logs all bones with names starting with "DEF-" in a Babylon.js skeleton.
+   *
+   * @param {BABYLON.Skeleton} skeleton - The skeleton to inspect
+   */
+  private logBones(prefix: string = "", skeleton: BABYLON.Skeleton) {
+    if (!skeleton) {
+      console.warn("No skeleton provided!")
+      return
+    }
+
+    const defBones =
+      prefix === ""
+        ? skeleton.bones
+        : skeleton.bones.filter((bone) => bone.name.startsWith(prefix))
+
+    console.group(`Bones in Skeleton: ${skeleton.name}`)
+    defBones.forEach((bone) => {
+      if (SKELETON_MAP.female && !SKELETON_MAP.female[bone.name.toString()])
+        console.log(bone.name)
+    })
+    console.groupEnd()
+
+    console.info(`Found ${defBones.length} ${prefix} bones.`)
+  }
+
+  /**
    * @private
    * Apply current scale values from controlPanelBones to all registered bones
    *
    * @param { BABYLON.Skeleton } skeleton - Skeleton to apply the scale
-   * @returns
+   *
+   * @returns { void }
    */
   private applyBoneScales(skeleton: BABYLON.Skeleton): void {
     Object.keys(this.controlPanelBones).forEach((boneName) => {
@@ -127,141 +456,18 @@ export class __Character__ {
     }
   }
 
-  /**
-   * @protected
-   * Character model initiate from shared asset
-   *
-   * @param { Matrix } position - Character set position
-   * @param { BABYLON.AssetContainer } asset - Shared asset
-   * @returns
-   */
-  protected async initCharacter(
-    position: Matrix,
-    asset: BABYLON.AssetContainer,
-  ): Promise<void> {
-    if (!asset) throw new Error("GLTFCharacterTemplate not initialized")
-
-    this.characterAssets = new BABYLON.AssetContainer(this.scene)
-
-    /**
-     * Clone skeletons
-     * It need to clone so the parent asset provider will keep the model consistency
-     */
-    this.characterAssets.skeletons = asset.skeletons.map((skeleton) =>
-      skeleton.clone(`${skeleton.name}_${this.characterAttribute.modelId}`),
-    )
-
-    // Clone meshes and bind skeletons
-    this.characterAssets.meshes = asset.meshes
-      .map((mesh) => {
-        const clone = mesh.clone(
-          `${mesh.name}_${this.characterAttribute.modelId}`,
-          null,
-        )
-        if (clone) {
-          clone.isVisible = true
-          clone.setEnabled(true)
-          clone.scaling.scaleInPlace(
-            this.characterAttribute.information.dimension.scale,
-          )
-
-          // Rebind skeleton
-          if (mesh.skeleton) {
-            const clonedSkeleton = this.characterAssets!.skeletons.find((s) =>
-              s.name.includes(mesh.skeleton!.name.split("_")[0] ?? ""),
-            )
-            if (clonedSkeleton) {
-              clone.skeleton = clonedSkeleton
-
-              this.controlPanelRegisterBones(clonedSkeleton)
-
-              clonedSkeleton.computeAbsoluteTransforms()
-              clonedSkeleton.prepare()
-            }
-          }
-        }
-        return clone
-      })
-      .filter((m): m is BABYLON.AbstractMesh => m !== null)
-
-    // TODO : Currently stop animations to test if they override scaling. Will done on animation management branch
-    this.characterAssets.animationGroups.forEach((ag) => {
-      ag.stop()
-      ag.onAnimationGroupPlayObservable.clear() // Prevent restarts
-      ag.onAnimationGroupLoopObservable.clear()
-    })
-    // Clone materials
-    this.characterAssets.materials = asset.materials
-      .map((mat) => mat.clone(`${mat.name}_${this.characterAttribute.modelId}`))
-      .filter((m) => m !== null)
-
-    // TODO : Clone animations
-    /*this.characterAssets.animationGroups = asset.animationGroups.map(
-      (group) => {
-        const animateClone = group.clone(
-          `${group.name}_${this.characterAttribute.modelId}`,
-          (target) => {
-            return (
-              this.characterAssets!.meshes.find((m) =>
-                m.name.includes(target.name),
-              ) || target
-            )
-          },
-        )
-        this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
-          animateClone
-        return animateClone
-      },
-    )*/
-
-    // Set up character root : So the instance could be re-use or handle from other spot
-    this.characterRoot = new BABYLON.TransformNode(
-      `character_root_${this.characterAttribute.modelId}`,
-      this.scene,
-    )
-
-    this.characterAssets.meshes.forEach((mesh) => {
-      mesh.setParent(this.characterRoot)
-      mesh.position.set(0, 0, 0)
-    })
-
-    this.characterRoot.position = new BABYLON.Vector3(
-      position.x,
-      position.y,
-      position.z,
-    )
-    this.characterAssets.addAllToScene()
-
-    // Provide label for character such like nickname or else
-    ;({ plane: this.labelPlane, observer: this.labelUpdateObserver } =
-      this.label.makeLabel(
-        this.characterAttribute.information.name,
-        this.characterRoot,
-      ))
-
-    // TODO : Remove on production. Add axes for debugging
-    if (this.characterRoot) {
-      const axes = new BABYLON.AxesViewer(this.scene, 1)
-      axes.xAxis.parent = this.characterRoot
-      axes.yAxis.parent = this.characterRoot
-      axes.zAxis.parent = this.characterRoot
+  public applySkinTone(color: string) {
+    const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
+      this.scene.getMeshByName(MESH_NAME.Body)
+    if (bodyMeshes) {
+      const bodyMaterial = bodyMeshes.material as BABYLON.PBRMaterial
+      bodyMaterial.albedoColor = BABYLON.Color3.FromHexString(color)
     }
-
-    // TODO : Remove on production. Add render loop to apply bone scaling for model customization
-    this.scene.registerBeforeRender(() => {
-      if (this.characterAssets?.skeletons) {
-        this.characterAssets.skeletons.forEach((skeleton) => {
-          this.applyBoneScales(skeleton)
-        })
-      }
-    })
-
-    this.isLoaded = true
   }
 
   /**
    * @public
-   * Model load state
+   * Model load state asyncronously
    *
    * @returns
    */
@@ -273,7 +479,7 @@ export class __Character__ {
    * @public
    * Handle character animation update
    *
-   * @returns
+   * @returns { void }
    */
   public update(key: KeyState, camera: BABYLON.ArcRotateCamera): void {
     const { w, a, s, d } = key
@@ -318,20 +524,25 @@ export class __Character__ {
   }
 
   /**
+   * @private
    * Register skeleton bones to control panel for dynamic resizing
+   *
+   * @param { BABYLON.Skeleton } skeleton - Character skeleton collection to register on bones
+   *
+   * @returns { void }
    */
   private controlPanelRegisterBones(skeleton: BABYLON.Skeleton): void {
     const keyBones = [
-      // "pelvis",
-      // "breast",
-      // "arm",
-      // "thigh",
-      // "shoulder",
-      // "neck",
-      // "head",
-      // "forearm",
+      "pelvis",
+      "breast",
+      "arm",
+      "thigh",
+      "shoulder",
+      "neck",
+      "head",
+      "forearm",
 
-      // Facial Control
+      /** Facial Control. */
       "forehead",
       "nose",
       "lip",
@@ -471,11 +682,14 @@ export class __Character__ {
   }
 
   /**
+   * @private
    * Resize a bone in the skeleton based on its name
+   *
    * @param skeleton - The skeleton containing the bones
    * @param name - Exact bone name to match
    * @param scale - The scale vector to apply
    * @param inverse - Whether to apply inverse scaling (e.g., 1/scale)
+   *
    * @returns {Array<{name: string, originalScale: BABYLON.Vector3}>} - Original scales of matched bones
    */
   private resizeBone(
@@ -493,7 +707,7 @@ export class __Character__ {
       return originalScales
     }
 
-    // Identify paired bone and children
+    /** Identify paired bone and children. */
     const isLeft = name.endsWith(".L")
     const isRight = name.endsWith(".R")
     const isLeft001 = name.endsWith(".L.001")
@@ -525,7 +739,6 @@ export class __Character__ {
       .map((pairedName) => skeleton.bones.find((b) => b.name === pairedName))
       .filter((b) => b) as BABYLON.Bone[]
 
-    // Store original scales
     originalScales.push({
       name: bone.name,
       originalScale: bone.scaling.clone(),
@@ -537,14 +750,14 @@ export class __Character__ {
       })
     })
 
-    // Apply scale directly (0.5 = smaller, 3.0 = larger)
+    /** Apply scale directly (0.5 = smaller, 3.0 = larger). */
     const effectiveScale = new BABYLON.Vector3(
       Math.max(scale.x, 0.8),
       Math.max(scale.y, 0.8),
       Math.max(scale.z, 0.8),
     )
 
-    // Animate main bone
+    /** Animate main bone. */
     const animation = new BABYLON.Animation(
       "boneScale",
       "scaling",
@@ -559,7 +772,7 @@ export class __Character__ {
     bone.animations = [animation]
     this.scene.beginAnimation(bone, 0, 15, false, 1.0)
 
-    // Animate paired bones
+    /** Animate paired bones */
     pairedBones.forEach((pairedBone) => {
       const pairedAnimation = new BABYLON.Animation(
         "boneScale",
@@ -593,8 +806,6 @@ export class __Character__ {
     skeleton.computeAbsoluteTransforms()
     skeleton.prepare()
 
-    console.log(effectiveScale)
-
     return originalScales
   }
 
@@ -605,23 +816,19 @@ export class __Character__ {
   //   }
   // }
 
-  /**
-   * @public
-   * Get character root
-   *
-   * @returns
-   */
-  public getRoot(): BABYLON.TransformNode | null {
+  // public getRoot(): BABYLON.TransformNode | null {
+  //   return this.characterRoot
+  // }
+
+  // public getRegisteredBones() {
+  //   return this.controlPanelBones
+  // }
+
+  get getRoot(): BABYLON.TransformNode | null {
     return this.characterRoot
   }
 
-  /**
-   * @public
-   * Get registered bones
-   *
-   * @returns
-   */
-  public getRegisteredBones() {
+  get getRegisteredBones() {
     return this.controlPanelBones
   }
 
@@ -629,7 +836,7 @@ export class __Character__ {
    * @public
    * Destroy character meshes
    *
-   * @returns
+   * @returns { void }
    */
   public destroy(): void {
     if (!this.characterAssets) return

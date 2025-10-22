@@ -1,9 +1,23 @@
 import * as BABYLON from "babylonjs"
 import * as GUI from "babylonjs-gui"
 
-export class __Label__ {
-  /** @private */
+/**
+ * @fileoverview Handle render label GUI
+ * @module EagerWing___Label
+ */
+
+/**
+ * Add label to scene
+ *
+ * @example
+ * const manager = new EagerWing___Label(scene);
+ * await manager.makeLabel("Hello There", characterRoot);
+ */
+
+export class EagerWing___Label {
+  /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
+
   /**
    * Label Management
    *

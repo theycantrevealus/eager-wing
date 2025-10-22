@@ -1,0 +1,17 @@
+#characterCreation-leftPanel {
+  position: fixed;
+  content: "";
+  z-index: 3;
+  left: 0;
+  top: 0;
+  color: #fff;
+  width: 20%;
+  height: 100%;
+  padding-top: 6%;
+  padding-left: 1%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.8) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
