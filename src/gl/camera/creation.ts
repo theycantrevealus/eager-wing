@@ -1,6 +1,6 @@
 import * as BABYLON from "babylonjs"
 
-export class __CameraHead__ {
+export class EagerWing___CameraCreation {
   private scene: BABYLON.Scene
   private camera: BABYLON.ArcRotateCamera | null = null
 
