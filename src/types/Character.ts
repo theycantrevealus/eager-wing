@@ -3,14 +3,13 @@ import type { Matrix } from "./Matrix"
 
 export type CharacterDimension = {
   scale: number
-  bones?: Map<string, Matrix>
+  bones?: Map<string, Matrix> | null
 }
 
 export type CharacterStyle = {
   body: {
     color: string
     hair: {
-      asset: BABYLON.AssetContainer | undefined
       color: string
     }
     brow: {
@@ -31,12 +30,13 @@ export type CharacterStyle = {
 
 export type CharacterInformation = {
   name: string
+  gender: string
   level: number
   health: number
   mana: number
   job: string
   race: string
-  dimension: CharacterDimension
+  dimension: CharacterDimension | null
 }
 
 export type CharacterAttribute = {
@@ -49,4 +49,18 @@ export type CharacterAttribute = {
   classConfig: {
     needDebug: boolean
   }
+}
+
+export type CharacterBoneSingleCollection = {
+  name: string
+  bone?: BABYLON.Bone
+  minimum: number
+  maximum: number
+  type?: string
+  group: string
+  configurable: boolean
+}
+
+export type CharacterBoneCollection = {
+  [key: string]: CharacterBoneSingleCollection
 }

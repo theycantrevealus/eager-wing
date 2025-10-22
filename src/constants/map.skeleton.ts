@@ -10,34 +10,82 @@ export const SKELETON_MAP: {
   [gender: string]: {
     [key: string]: {
       identifier: string
+      group?: string
+      name?: string
+      configurable?: boolean
     }
   }
 } = {
   female: {
     /** [S1–Co4] Sacrum & Coccyx */
-    "DEF-spine": { identifier: "SPINE001" },
+    "DEF-spine": {
+      identifier: "SPINE001",
+      name: "[S1–Co4] Sacrum & Coccyx",
+      group: "body",
+      configurable: false,
+    },
 
     /** [L3–L5] Lower Lumbar */
-    "DEF-spine.001": { identifier: "SPINE002" },
+    "DEF-spine.001": {
+      identifier: "SPINE002",
+      name: "[L3–L5] Lower Lumbar",
+      group: "body",
+      configurable: false,
+    },
 
     /** [L1–L2] Upper Lumbar */
-    "DEF-spine.002": { identifier: "SPINE003" },
+    "DEF-spine.002": {
+      identifier: "SPINE003",
+      name: "[L1–L2] Upper Lumbar",
+      group: "body",
+      configurable: false,
+    },
 
     /** [T9–T12] Lower Thoracic */
-    "DEF-spine.003": { identifier: "SPINE004" },
+    "DEF-spine.003": {
+      identifier: "SPINE004",
+      name: "[T9–T12] Lower Thoracic",
+      group: "body",
+      configurable: false,
+    },
 
     /** [T5–T8] Mid Thoracic */
-    "DEF-spine.004": { identifier: "SPINE005" },
+    "DEF-spine.004": {
+      identifier: "SPINE005",
+      name: "[T5–T8] Mid Thoracic",
+      group: "body",
+      configurable: false,
+    },
 
     /** [T1–T4] Upper Thoracic */
-    "DEF-spine.005": { identifier: "SPINE006" },
+    "DEF-spine.005": {
+      identifier: "SPINE006",
+      name: "[T1–T4] Upper Thoracic",
+      group: "body",
+      configurable: false,
+    },
 
     /** [C1–C7] Cervical */
-    "DEF-spine.006": { identifier: "SPINE007" },
+    "DEF-spine.006": {
+      identifier: "SPINE007",
+      name: "[C1–C7] Cervical",
+      group: "body",
+      configurable: false,
+    },
 
     /** Pelvis */
-    "DEF-pelvis.L": { identifier: "PELVIS001__LEFT" },
-    "DEF-pelvis.R": { identifier: "PELVIS001__RIGHT" },
+    "DEF-pelvis.L": {
+      identifier: "PELVIS001__LEFT",
+      name: "Pelvis Left",
+      group: "body",
+      configurable: true,
+    },
+    "DEF-pelvis.R": {
+      identifier: "PELVIS001__RIGHT",
+      name: "Pelvis Right",
+      group: "body",
+      configurable: true,
+    },
 
     /** Thigh */
     "DEF-thigh.L": { identifier: "THIGH001__LEFT" },
@@ -90,22 +138,30 @@ export const SKELETON_MAP: {
     "DEF-brow.T.R.003": { identifier: "BROW004__TOP_RIGHT" },
 
     /** Lid */
-    "DEF-lid.B.L": { identifier: "LID001__BOTTOM_LEFT" },
-    "DEF-lid.B.L.001": { identifier: "LID002__BOTTOM_LEFT" },
-    "DEF-lid.B.L.002": { identifier: "LID003__BOTTOM_LEFT" },
-    "DEF-lid.B.L.003": { identifier: "LID004__BOTTOM_LEFT" },
-    "DEF-lid.T.L": { identifier: "LID001__TOP_LEFT" },
-    "DEF-lid.T.L.001": { identifier: "LID002__TOP_LEFT" },
-    "DEF-lid.T.L.002": { identifier: "LID003__TOP_LEFT" },
-    "DEF-lid.T.L.003": { identifier: "LID004__TOP_LEFT" },
-    "DEF-lid.B.R": { identifier: "LID001__BOTTOM_RIGHT" },
-    "DEF-lid.B.R.001": { identifier: "LID002__BOTTOM_RIGHT" },
-    "DEF-lid.B.R.002": { identifier: "LID003__BOTTOM_RIGHT" },
-    "DEF-lid.B.R.003": { identifier: "LID004__BOTTOM_RIGHT" },
-    "DEF-lid.T.R": { identifier: "LID001__TOP_RIGHT" },
-    "DEF-lid.T.R.001": { identifier: "LID002__TOP_RIGHT" },
-    "DEF-lid.T.R.002": { identifier: "LID003__TOP_RIGHT" },
-    "DEF-lid.T.R.003": { identifier: "LID004__TOP_RIGHT" },
+    "DEF-lid.B.L": {
+      identifier: "LID001__BOTTOM_LEFT",
+      name: "Lid Bottom Left 001",
+      group: "head",
+    },
+    "DEF-lid.B.L.001": {
+      identifier: "LID002__BOTTOM_LEFT",
+      name: "Lid Bottom Left 002",
+      group: "head",
+    },
+    "DEF-lid.B.L.002": { identifier: "LID003__BOTTOM_LEFT", group: "head" },
+    "DEF-lid.B.L.003": { identifier: "LID004__BOTTOM_LEFT", group: "head" },
+    "DEF-lid.T.L": { identifier: "LID001__TOP_LEFT", group: "head" },
+    "DEF-lid.T.L.001": { identifier: "LID002__TOP_LEFT", group: "head" },
+    "DEF-lid.T.L.002": { identifier: "LID003__TOP_LEFT", group: "head" },
+    "DEF-lid.T.L.003": { identifier: "LID004__TOP_LEFT", group: "head" },
+    "DEF-lid.B.R": { identifier: "LID001__BOTTOM_RIGHT", group: "head" },
+    "DEF-lid.B.R.001": { identifier: "LID002__BOTTOM_RIGHT", group: "head" },
+    "DEF-lid.B.R.002": { identifier: "LID003__BOTTOM_RIGHT", group: "head" },
+    "DEF-lid.B.R.003": { identifier: "LID004__BOTTOM_RIGHT", group: "head" },
+    "DEF-lid.T.R": { identifier: "LID001__TOP_RIGHT", group: "head" },
+    "DEF-lid.T.R.001": { identifier: "LID002__TOP_RIGHT", group: "head" },
+    "DEF-lid.T.R.002": { identifier: "LID003__TOP_RIGHT", group: "head" },
+    "DEF-lid.T.R.003": { identifier: "LID004__TOP_RIGHT", group: "head" },
 
     /** Ear */
     "DEF-ear.L": { identifier: "EAR001__LEFT" },
