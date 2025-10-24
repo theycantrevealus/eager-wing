@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 import Builder from "__&vite/components/Builder.vue"
 import CharacterCreation from "__&vite/components/Character.Creation.vue"
+import LabControl from "__&vite/components/Lab.Control.vue"
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -9,7 +10,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       requiresAuth: true,
     },
-    redirect: "/creation",
+    redirect: "/lab.control",
     component: Builder,
     children: [
       {
@@ -19,6 +20,14 @@ const routes: Array<RouteRecordRaw> = [
           requiresAuth: true,
         },
         component: CharacterCreation,
+      },
+      {
+        path: "lab.control",
+        name: "LabControl",
+        meta: {
+          requiresAuth: true,
+        },
+        component: LabControl,
       },
     ],
   },
