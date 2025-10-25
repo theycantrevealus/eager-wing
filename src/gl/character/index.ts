@@ -367,13 +367,12 @@ export class EagerWing___Character {
     }
 
     /** ---------------------------------------------------------------------- jump */
-    const deltaTime = (this.engine.getDeltaTime() || 16) / 1000 // seconds
-    // ray origin at the feet (characterRoot.position + feetOffset)
+    const deltaTime = (this.engine.getDeltaTime() || 16) / 1000
     const origin = this.characterRoot.position.add(
       new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
     )
     const down = new BABYLON.Vector3(0, -1, 0)
-    const rayLength = Math.abs(this.feetOffset) + 2 // long enough to reach ground below feet
+    const rayLength = Math.abs(this.feetOffset) + 2
 
     const ray = new BABYLON.Ray(origin, down, rayLength)
     const pick = this.scene.pickWithRay(ray, (mesh) => {
@@ -384,17 +383,14 @@ export class EagerWing___Character {
     let groundY = Number.NEGATIVE_INFINITY
     if (hasHit && pick!.pickedPoint) groundY = pick!.pickedPoint!.y
 
-    // distance from feet to ground
     const feetY = origin.y
     const distanceToGround = hasHit ? feetY - groundY : Number.POSITIVE_INFINITY
 
-    // Consider grounded only if ground is very close to feet AND character is not moving upward
     const grounded =
       hasHit &&
       distanceToGround <= this.groundTolerance &&
       this.verticalVelocity <= 0
 
-    // Start jump only if space pressed and grounded
     if (space && grounded && !this.isJumping) {
       this.isJumping = true
       this.verticalVelocity = this.jumpPower
@@ -404,15 +400,10 @@ export class EagerWing___Character {
       this.playAnimation(`Armed-RunJump_${this.characterAttribute.modelId}`)
     }
 
-    // Integrate vertical motion (velocity in m/s)
     if (this.isJumping || !grounded) {
-      // Apply gravity
       this.verticalVelocity -= this.gravityForce * deltaTime
-      // Move character by velocity (frame-rate independent)
       this.characterRoot.position.y += this.verticalVelocity * deltaTime
 
-      // Landing check: when feet are close and falling (velocity <= 0)
-      // Recompute ray origin after movement to avoid skipping
       const originAfter = this.characterRoot.position.add(
         new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
       )
@@ -428,7 +419,6 @@ export class EagerWing___Character {
       )
 
       if (landed) {
-        // Snap to ground and reset physics
         this.isJumping = false
         this.verticalVelocity = 0
         this.characterRoot.position.y =
@@ -452,13 +442,11 @@ export class EagerWing___Character {
            */
       }
     } else {
-      // Grounded and not jumping: keep root sitting on ground smoothly (optional: lerp)
       if (hasHit) {
         const targetY = groundY - this.feetOffset + 0.01
         const curY = this.characterRoot.position.y
         const diff = targetY - curY
         if (Math.abs(diff) > 0.001) {
-          // smooth snap using deltaTime
           const snapSpeed = 30 // higher = faster snap
           this.characterRoot.position.y = BABYLON.Scalar.Lerp(
             curY,
@@ -469,9 +457,7 @@ export class EagerWing___Character {
           this.characterRoot.position.y = targetY
         }
       } else {
-        // No ground underfoot (fell off an edge) -> start falling
         this.isJumping = true
-        // verticalVelocity remains as-is (could initialize to 0)
       }
     }
     /** ---------------------------------------------------------------------- end of jump */
