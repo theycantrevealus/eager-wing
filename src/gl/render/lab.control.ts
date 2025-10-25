@@ -21,11 +21,11 @@ import type { KeyState } from "__&interfaces/keyboard"
  */
 
 export class EagerWing___LabControl {
-  /** The active BabylonJS scene used for load. */
-  private scene: BABYLON.Scene
-
   /** Engine renderer. */
   private engine: BABYLON.Engine
+
+  /** The active BabylonJS scene used for load. */
+  private scene: BABYLON.Scene
 
   /** Camera Instance Manager. */
   private cameraActionManager: EagerWing___CameraAction
@@ -53,6 +53,7 @@ export class EagerWing___LabControl {
     a: false,
     s: false,
     d: false,
+    space: false,
   }
 
   /**
@@ -147,6 +148,7 @@ export class EagerWing___LabControl {
       if (e.key === "a") this.keyboardKey.a = true
       if (e.key === "s") this.keyboardKey.s = true
       if (e.key === "d") this.keyboardKey.d = true
+      if (e.code === "Space") this.keyboardKey.space = true
 
       if (e.key === "x")
         this.characterInstances.get("mainPlayer")?.toogleCombatMode()
@@ -157,6 +159,7 @@ export class EagerWing___LabControl {
       if (e.key === "a") this.keyboardKey.a = false
       if (e.key === "s") this.keyboardKey.s = false
       if (e.key === "d") this.keyboardKey.d = false
+      if (e.code === "Space") this.keyboardKey.space = false
     })
 
     window.addEventListener("blur", () => {
@@ -164,6 +167,7 @@ export class EagerWing___LabControl {
       this.keyboardKey.a = false
       this.keyboardKey.s = false
       this.keyboardKey.d = false
+      this.keyboardKey.space = false
     })
   }
 
@@ -219,6 +223,7 @@ export class EagerWing___LabControl {
       this.characterInstances?.set(
         "mainPlayer",
         new EagerWing___Character(
+          this.engine,
           this.scene,
           mainCharacter,
           characterAttribute,

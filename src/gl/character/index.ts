@@ -15,6 +15,9 @@ import { SKELETON_MAP } from "__&constants/map.skeleton"
  * @class
  */
 export class EagerWing___Character {
+  /** Engine renderer. */
+  private engine: BABYLON.Engine
+
   /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
 
@@ -49,8 +52,6 @@ export class EagerWing___Character {
   private labelPlane: BABYLON.Mesh | null = null
   private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
 
-  private gravity: number = 0.3
-
   /** Character Mode */
   private combatMode: boolean = false
 
@@ -65,23 +66,33 @@ export class EagerWing___Character {
     }
   > = {}
 
-  // private sideSpeed: number = 0.05
-  // private runSpeed: number = 0.3
+  /** Physics */
+  private feetOffset: number = 0
+  private groundTolerance: number = 0.5
+  private gravityForce: number = 10
+  private isJumping: boolean = false
+  private jumpPower: number = 6
+  private verticalVelocity: number = 0
+  private sideSpeed: number = 0.05
+  private runSpeed: number = 0.3
 
   /**
    * @constructor
    * Create character instance. Handle the character customizations, animations, motions, and else.
    * All the assets is shared for same character model: NPC, other players, etc
    *
+   * @param { BABYLON.Engine } engine - Main engine instance
    * @param { BABYLON.Scene } scene - Main scene instance
    * @param { BABYLON.AssetContainer } characterSharedAsset - Character shared asset
    * @param { CharacterAttribute } characterAttribute - Character attribute
    */
   constructor(
+    engine: BABYLON.Engine,
     scene: BABYLON.Scene,
     characterSharedAsset: BABYLON.AssetContainer,
     characterAttribute: CharacterAttribute,
   ) {
+    this.engine = engine
     this.scene = scene
 
     /** If debugging character object is needed */
@@ -299,7 +310,7 @@ export class EagerWing___Character {
   public update(key: KeyState, camera: BABYLON.ArcRotateCamera): void {
     if (!this.isLoaded || !this.characterRoot || !camera) return
 
-    const { w, a, s, d, x } = key
+    const { w, a, s, d, space } = key
     const moving = w || a || s || d
     let moveDir = new BABYLON.Vector3(0, 0, 0)
     let nextAnimName = `UnArmed-Idle_${this.characterAttribute.modelId}`
@@ -315,38 +326,30 @@ export class EagerWing___Character {
       camForward,
     ).normalize()
 
-    /**---------------------------------------------------------------------- movement */
+    /** ---------------------------------------------------------------------- movement */
     if (w) {
       moveDir.addInPlace(camForward)
-      if (this.combatMode) {
-        nextAnimName = `Armed-RunForward_${this.characterAttribute.modelId}`
-      } else {
-        nextAnimName = `Unarmed-RunForward_${this.characterAttribute.modelId}`
-      }
+      nextAnimName = this.combatMode
+        ? `Armed-RunForward_${this.characterAttribute.modelId}`
+        : `Unarmed-RunForward_${this.characterAttribute.modelId}`
     }
     if (s) {
       moveDir.subtractInPlace(camForward)
-      if (this.combatMode) {
-        nextAnimName = `Armed-WalkBack_${this.characterAttribute.modelId}`
-      } else {
-        nextAnimName = `Unarmed-Backward_${this.characterAttribute.modelId}`
-      }
+      nextAnimName = this.combatMode
+        ? `Armed-WalkBack_${this.characterAttribute.modelId}`
+        : `Unarmed-Backward_${this.characterAttribute.modelId}`
     }
     if (a) {
       moveDir.subtractInPlace(camRight)
-      if (this.combatMode) {
-        nextAnimName = `Armed-WalkLeft_${this.characterAttribute.modelId}`
-      } else {
-        nextAnimName = `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
-      }
+      nextAnimName = this.combatMode
+        ? `Armed-WalkLeft_${this.characterAttribute.modelId}`
+        : `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
     }
     if (d) {
       moveDir.addInPlace(camRight)
-      if (this.combatMode) {
-        nextAnimName = `Armed-WalkRight_${this.characterAttribute.modelId}`
-      } else {
-        nextAnimName = `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
-      }
+      nextAnimName = this.combatMode
+        ? `Armed-WalkRight_${this.characterAttribute.modelId}`
+        : `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
     }
 
     if (moving) {
@@ -363,38 +366,142 @@ export class EagerWing___Character {
       )
     }
 
-    if (this.currentAnimName !== nextAnimName) {
-      this.playAnimation(nextAnimName)
+    /** ---------------------------------------------------------------------- jump */
+    const deltaTime = (this.engine.getDeltaTime() || 16) / 1000 // seconds
+    // ray origin at the feet (characterRoot.position + feetOffset)
+    const origin = this.characterRoot.position.add(
+      new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
+    )
+    const down = new BABYLON.Vector3(0, -1, 0)
+    const rayLength = Math.abs(this.feetOffset) + 2 // long enough to reach ground below feet
+
+    const ray = new BABYLON.Ray(origin, down, rayLength)
+    const pick = this.scene.pickWithRay(ray, (mesh) => {
+      return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
+    })
+
+    const hasHit = !!(pick && pick.hit && pick.pickedPoint)
+    let groundY = Number.NEGATIVE_INFINITY
+    if (hasHit && pick!.pickedPoint) groundY = pick!.pickedPoint!.y
+
+    // distance from feet to ground
+    const feetY = origin.y
+    const distanceToGround = hasHit ? feetY - groundY : Number.POSITIVE_INFINITY
+
+    // Consider grounded only if ground is very close to feet AND character is not moving upward
+    const grounded =
+      hasHit &&
+      distanceToGround <= this.groundTolerance &&
+      this.verticalVelocity <= 0
+
+    // Start jump only if space pressed and grounded
+    if (space && grounded && !this.isJumping) {
+      this.isJumping = true
+      this.verticalVelocity = this.jumpPower
+
+      // TODO : Jump animation
+      // nextAnimName = `Armed-RunJump_${this.characterAttribute.modelId}`
+      this.playAnimation(`Armed-RunJump_${this.characterAttribute.modelId}`)
     }
+
+    // Integrate vertical motion (velocity in m/s)
+    if (this.isJumping || !grounded) {
+      // Apply gravity
+      this.verticalVelocity -= this.gravityForce * deltaTime
+      // Move character by velocity (frame-rate independent)
+      this.characterRoot.position.y += this.verticalVelocity * deltaTime
+
+      // Landing check: when feet are close and falling (velocity <= 0)
+      // Recompute ray origin after movement to avoid skipping
+      const originAfter = this.characterRoot.position.add(
+        new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
+      )
+      const rayAfter = new BABYLON.Ray(originAfter, down, rayLength)
+      const pickAfter = this.scene.pickWithRay(rayAfter, (mesh) => {
+        return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
+      })
+      const landed = !!(
+        pickAfter &&
+        pickAfter.hit &&
+        originAfter.y - pickAfter!.pickedPoint!.y <= this.groundTolerance &&
+        this.verticalVelocity <= 0
+      )
+
+      if (landed) {
+        // Snap to ground and reset physics
+        this.isJumping = false
+        this.verticalVelocity = 0
+        this.characterRoot.position.y =
+          pickAfter!.pickedPoint!.y - this.feetOffset + 0.01
+
+        // nextAnimName = `Armed-RunJump_${this.characterAttribute.modelId}`
+        this.playAnimation(`Armed-RunJump_${this.characterAttribute.modelId}`)
+        /**
+           * 
+           * 
+           * nextAnimName = `Unarmed-Land_${this.characterAttribute.modelId}`
+
+  // optionally transition to idle automatically after landing anim
+  setTimeout(() => {
+    if (!this.isJumping) {
+      this.playAnimation(`UnArmed-Idle_${this.characterAttribute.modelId}`)
+    }
+  }, 400) // duration of landing anim in ms
+           * 
+           * 
+           */
+      }
+    } else {
+      // Grounded and not jumping: keep root sitting on ground smoothly (optional: lerp)
+      if (hasHit) {
+        const targetY = groundY - this.feetOffset + 0.01
+        const curY = this.characterRoot.position.y
+        const diff = targetY - curY
+        if (Math.abs(diff) > 0.001) {
+          // smooth snap using deltaTime
+          const snapSpeed = 30 // higher = faster snap
+          this.characterRoot.position.y = BABYLON.Scalar.Lerp(
+            curY,
+            targetY,
+            Math.min(1, snapSpeed * deltaTime),
+          )
+        } else {
+          this.characterRoot.position.y = targetY
+        }
+      } else {
+        // No ground underfoot (fell off an edge) -> start falling
+        this.isJumping = true
+        // verticalVelocity remains as-is (could initialize to 0)
+      }
+    }
+    /** ---------------------------------------------------------------------- end of jump */
 
     camera.target = this.characterRoot.position.add(
       new BABYLON.Vector3(0, 1, 0),
     )
 
-    // Raycast check with ground
-    const hit = this.getGroundHit()
-
-    if (hit && hit.hit && hit.pickedPoint) {
-      this.characterRoot.position.y = hit.pickedPoint.y + 0.01
-    } else {
-      this.characterRoot.position.y -= this.gravity
-    }
-
-    if (this.characterRoot.position.y < -50) {
-      // Tolerance height.
-      // TODO : Add falling animation
-
-      this.characterRoot.position.set(0, 5, 0)
+    /** ---------------------------------------------------------------------- animation */
+    if (this.currentAnimName !== nextAnimName) {
+      this.playAnimation(nextAnimName)
     }
   }
 
-  getGroundHit() {
-    if (this.characterRoot) {
-      const origin = this.characterRoot.position.clone()
-      const direction = new BABYLON.Vector3(0, -1, 0)
-      const ray = new BABYLON.Ray(origin, direction, 100)
-      return this.scene.pickWithRay(ray, (mesh) => mesh.name === "ground")
-    }
+  private getGroundHit(): BABYLON.PickingInfo | null {
+    if (!this.scene || !this.characterRoot) return null
+
+    const origin = this.characterRoot.position.clone()
+    origin.y += 0.5 // raise ray start slightly above feet
+
+    const direction = new BABYLON.Vector3(0, -1, 0)
+    const length = 2 // ray length; enough to detect ground below
+
+    const ray = new BABYLON.Ray(origin, direction, length)
+    const pick = this.scene.pickWithRay(ray, (mesh) => {
+      // Only pick actual ground meshes
+      return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
+    })
+
+    return pick ?? null
   }
 
   private stopAllAnimations(): void {
