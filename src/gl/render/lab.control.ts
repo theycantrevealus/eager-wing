@@ -30,6 +30,9 @@ export class EagerWing___LabControl {
   /** Camera Instance Manager. */
   private cameraActionManager: EagerWing___CameraAction
 
+  /** Shadow Generator. */
+  private shadowGenerator: BABYLON.ShadowGenerator
+
   private stats: Stats
 
   /** Asset Manager Instance. */
@@ -95,6 +98,17 @@ export class EagerWing___LabControl {
       this.scene,
     )
     light.intensity = 0.7
+
+    const dirLight = new BABYLON.DirectionalLight(
+      "dirLight",
+      new BABYLON.Vector3(-1, -2, -1), // direction
+      this.scene,
+    )
+    dirLight.position = new BABYLON.Vector3(20, 40, 20)
+
+    this.shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight)
+    this.shadowGenerator.useBlurExponentialShadowMap = true
+    this.shadowGenerator.blurKernel = 32
 
     this.stats = new Stats()
     this.stats.showPanel(0)
@@ -185,11 +199,13 @@ export class EagerWing___LabControl {
    * @returns { Promise<void> }
    */
   async init(characterAttribute: CharacterAttribute): Promise<void> {
-    BABYLON.MeshBuilder.CreateGround(
+    const ground = BABYLON.MeshBuilder.CreateGround(
       "ground",
       { width: 50, height: 50 },
       this.scene,
     )
+
+    ground.receiveShadows = true
 
     await this.assetManager.loadAll({
       mainPlayer: "../characters/DUMMY.glb",
@@ -212,8 +228,13 @@ export class EagerWing___LabControl {
       const mainCharacterInstance = this.characterInstances?.get("mainPlayer")
       if (this.characterInstances) {
         const mainCharacterRoot = mainCharacterInstance?.getRoot
-        if (mainCharacterRoot)
+        if (mainCharacterRoot) {
+          mainCharacterRoot.getChildMeshes().forEach((mesh) => {
+            this.shadowGenerator.addShadowCaster(mesh)
+          })
+
           this.characterRoots?.set("mainPlayer", mainCharacterRoot)
+        }
       }
     }
   }

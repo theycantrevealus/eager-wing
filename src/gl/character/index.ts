@@ -49,6 +49,8 @@ export class EagerWing___Character {
   private labelPlane: BABYLON.Mesh | null = null
   private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
 
+  private gravity: number = 0.3
+
   /** Character Mode */
   private combatMode: boolean = false
 
@@ -368,6 +370,31 @@ export class EagerWing___Character {
     camera.target = this.characterRoot.position.add(
       new BABYLON.Vector3(0, 1, 0),
     )
+
+    // Raycast check with ground
+    const hit = this.getGroundHit()
+
+    if (hit && hit.hit && hit.pickedPoint) {
+      this.characterRoot.position.y = hit.pickedPoint.y + 0.01
+    } else {
+      this.characterRoot.position.y -= this.gravity
+    }
+
+    if (this.characterRoot.position.y < -50) {
+      // Tolerance height.
+      // TODO : Add falling animation
+
+      this.characterRoot.position.set(0, 5, 0)
+    }
+  }
+
+  getGroundHit() {
+    if (this.characterRoot) {
+      const origin = this.characterRoot.position.clone()
+      const direction = new BABYLON.Vector3(0, -1, 0)
+      const ray = new BABYLON.Ray(origin, direction, 100)
+      return this.scene.pickWithRay(ray, (mesh) => mesh.name === "ground")
+    }
   }
 
   private stopAllAnimations(): void {
