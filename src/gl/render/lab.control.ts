@@ -9,6 +9,7 @@ import { EagerWing___CameraAction } from "__&GL/camera/action"
 import type { CharacterAttribute } from "__&types/Character"
 import { EagerWing___AssetManager } from "__&utils/asset.manager"
 import { EagerWing___Character } from "__&GL/character"
+import type { KeyState } from "__&interfaces/keyboard"
 
 /**
  * This is lab renderer to develop basic character control module
@@ -42,6 +43,14 @@ export class EagerWing___LabControl {
 
   /** All humanoid root instances */
   private characterRoots: Map<string, BABYLON.TransformNode> = new Map()
+
+  /** Allowed key */
+  private keyboardKey: KeyState = {
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+  }
 
   /**
    * Character Control Lab
@@ -100,26 +109,45 @@ export class EagerWing___LabControl {
     })
 
     this.scene.activeCamera = this.cameraActionManager.getCamera()
+
+    // this.scene.onKeyboardObservable.add(this.keyboardFunction.bind(this))
   }
 
   animate(): void {
     this.stats.begin()
     this.engine.runRenderLoop(() => {
+      const main = this.characterInstances.get("mainPlayer")
+      if (main) {
+        main.update(this.keyboardKey, this.cameraActionManager.getCamera())
+      }
+
       this.scene.render()
       this.stats.end()
     })
   }
 
   setupInteractions(): void {
-    // window.addEventListener(
-    //   "keydown",
-    //   (e) => (this.keys[e.key.toLowerCase()] = true),
-    // )
-    // window.addEventListener(
-    //   "keyup",
-    //   (e) => (this.keys[e.key.toLowerCase()] = false),
-    // )
     window.addEventListener("resize", this.handleResize)
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "w") this.keyboardKey.w = true
+      if (e.key === "a") this.keyboardKey.a = true
+      if (e.key === "s") this.keyboardKey.s = true
+      if (e.key === "d") this.keyboardKey.d = true
+    })
+
+    window.addEventListener("keyup", (e) => {
+      if (e.key === "w") this.keyboardKey.w = false
+      if (e.key === "a") this.keyboardKey.a = false
+      if (e.key === "s") this.keyboardKey.s = false
+      if (e.key === "d") this.keyboardKey.d = false
+    })
+
+    window.addEventListener("blur", () => {
+      this.keyboardKey.w = false
+      this.keyboardKey.a = false
+      this.keyboardKey.s = false
+      this.keyboardKey.d = false
+    })
   }
 
   handleResize(): void {
@@ -145,7 +173,21 @@ export class EagerWing___LabControl {
     }
   }
 
-  async init(characterAttribute: CharacterAttribute) {
+  /**
+   * @async
+   * Lab Initiation
+   *
+   * @param characterAttribute - Character attribute to loads
+   *
+   * @returns { Promise<void> }
+   */
+  async init(characterAttribute: CharacterAttribute): Promise<void> {
+    BABYLON.MeshBuilder.CreateGround(
+      "ground",
+      { width: 50, height: 50 },
+      this.scene,
+    )
+
     await this.assetManager.loadAll({
       mainPlayer: "../characters/DUMMY.glb",
     })

@@ -30,29 +30,24 @@ export class EagerWing___Character {
   /** Character object after apply attribute. */
   private characterRoot: BABYLON.TransformNode | null = null
 
+  /** Registered humanoid bones formatted with humanly name */
+  private bonesCollection: CharacterBoneCollection = {}
+
+  /** Animation collection */
+  public animations: Record<string, BABYLON.AnimationGroup> = {}
+
   /** Character processing promise. */
   private loadPromise: Promise<void>
 
   /** Character processing promise result. */
   protected isLoaded: boolean = false
 
-  /** Registered humanoid bones formatted with humanly name */
-  private bonesCollection: CharacterBoneCollection = {}
+  private currentAnimation?: BABYLON.AnimationGroup
+  private currentAnimName: string | null = null
+  private fadeObserver?: BABYLON.Observer<BABYLON.Scene>
 
-  /**
-   * TODO : TIDY BELOW
-   *
-   *
-   *
-   *
-   *
-   *
-   *
-   */
   private labelPlane: BABYLON.Mesh | null = null
   private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
-
-  public animations: Record<string, BABYLON.AnimationGroup> = {}
 
   private controlPanelBones: Record<
     string,
@@ -77,10 +72,6 @@ export class EagerWing___Character {
     forearm: { minimum: 1.1, maximum: 1.2 },
   }
 
-  // TODO : Animation preparation
-  // private currentAction: BABYLON.AnimationGroup | null = null
-  // private actionMap: Record<string, BABYLON.AnimationGroup> = {}
-  // private lastMovementState: string = ""
   // private sideSpeed: number = 0.05
   // private runSpeed: number = 0.3
 
@@ -178,21 +169,6 @@ export class EagerWing___Character {
               ? this.characterAttribute.information.dimension.scale
               : 0,
           )
-
-          // if (mesh.skeleton) {
-          //   const clonedSkeleton = this.characterAssets!.skeletons.find((s) =>
-          //     s.name.includes(mesh.skeleton!.name.split("_")[0] ?? ""),
-          //   )
-          //   if (clonedSkeleton) {
-          //     clone.skeleton = clonedSkeleton
-
-          //     // TODO : Bone registration with auto paired left and right
-          //     // this.controlPanelRegisterBones(clonedSkeleton)
-
-          //     clonedSkeleton.computeAbsoluteTransforms()
-          //     clonedSkeleton.prepare()
-          //   }
-          // }
         }
         return clone
       })
@@ -203,130 +179,28 @@ export class EagerWing___Character {
       .map((mat) => mat.clone(`${mat.name}_${this.characterAttribute.modelId}`))
       .filter((m) => m !== null)
 
-    /** Proceed character hair. */
-    // const headMesh = this.scene.getMeshByName(MESH_NAME.Head)
-    // const hairMesh = this.characterAttribute.style.body.hair.asset?.meshes[0]
-    // if (headMesh && hairMesh && headMesh.material) {
-    //   const realHair = hairMesh.getChildMeshes()[0] || hairMesh
-    //   hairMesh.parent = this.characterRoot
-
-    //   headMesh.position.set(0, 0.915, 0)
-    //   realHair.rotationQuaternion = null
-    //   realHair.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL)
-    //   headMesh.scaling.set(0.75, 0.75, 0.75)
-    // }
-
-    /** Proceed character body */
-    const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
-      this.scene.getMeshByName(MESH_NAME.Body)
-    if (bodyMeshes) {
-      const bodyMaterial = bodyMeshes.material as BABYLON.PBRMaterial
-      bodyMaterial.albedoColor = BABYLON.Color3.FromHexString(
-        this.characterAttribute.style.body.color,
-      )
-    }
-
-    /** Proceed character brow */
-    const browMeshes: BABYLON.Nullable<BABYLON.AbstractMesh>[] = [
-      this.scene.getMeshByName(MESH_NAME.Brow.Right),
-      this.scene.getMeshByName(MESH_NAME.Brow.Left),
-    ]
-
-    browMeshes.forEach((browMeshes) => {
-      if (browMeshes) {
-        const browMaterial = browMeshes.material as BABYLON.PBRMaterial
-        browMaterial.albedoColor = BABYLON.Color3.FromHexString(
-          this.characterAttribute.style.body.brow.color,
-        )
-      }
-    })
-
-    /** Proceed character eye iris. */
-    const eyeIrisMeshes = [
-      this.scene.getMeshByName(MESH_NAME.Eye.Right.Iris),
-      this.scene.getMeshByName(MESH_NAME.Eye.Left.Iris),
-    ]
-
-    const tex = new BABYLON.Texture(
-      "./src/assets/character/eyes/iris.png",
-      this.scene,
-    )
-    tex.uScale = 0.5
-    tex.vScale = 0.5
-    tex.uOffset = (1 - tex.uScale) / 2
-    tex.vOffset = (1 - tex.vScale) / 2
-
-    const irisMat = new BABYLON.StandardMaterial("irisMat", this.scene)
-    irisMat.diffuseTexture = tex
-    irisMat.useAlphaFromDiffuseTexture = true
-    irisMat.backFaceCulling = false
-    irisMat.diffuseColor = new BABYLON.Color3(0.5, 0.8, 1.0)
-
-    eyeIrisMeshes.forEach((irisMeshes) => {
-      if (irisMeshes) {
-        irisMeshes.material = irisMat
-      }
-    })
-
-    /** Proceed character lip. */
-    const lipsMesh = this.scene.getMeshByName(MESH_NAME.Lip)
-    if (lipsMesh && lipsMesh.material instanceof BABYLON.PBRMaterial) {
-      const material = lipsMesh.material as BABYLON.PBRMaterial
-      material.albedoColor = BABYLON.Color3.FromHexString(
-        this.characterAttribute.style.body.lip.color,
-      )
-    }
-
-    /**
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
-
-
-
-
-
-
-
-     */
-
-    // TODO : Currently stop animations to test if they override scaling. Will done on animation management branch
-    this.characterAssets.animationGroups.forEach((ag) => {
-      ag.stop()
-      ag.onAnimationGroupPlayObservable.clear() // Prevent restarts
-      ag.onAnimationGroupLoopObservable.clear()
-    })
-
-    // TODO : Clone animations
-    /*this.characterAssets.animationGroups = asset.animationGroups.map(
+    this.characterAssets.animationGroups = asset.animationGroups.map(
       (group) => {
+        group.stop()
+
         const animateClone = group.clone(
           `${group.name}_${this.characterAttribute.modelId}`,
-          (target) => {
-            return (
-              this.characterAssets!.meshes.find((m) =>
-                m.name.includes(target.name),
-              ) || target
-            )
-          },
+          (target) =>
+            this.characterAssets!.meshes.find((m) =>
+              m.name.includes(target.name),
+            ) || target,
         )
+
         this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
           animateClone
         return animateClone
       },
-    )*/
+    )
+
+    this.stopAllAnimations()
 
     /** Set up character root : So the instance could be re-use or handle from other spot. */
-
     this.characterAssets.meshes.forEach((mesh) => {
-      console.log(mesh.name)
       mesh.setParent(this.characterRoot)
       mesh.position.set(0, 0, 0)
     })
@@ -340,20 +214,23 @@ export class EagerWing___Character {
         this.characterRoot,
       ))
 
-    // TODO : Remove on production. Add render loop to apply bone scaling for model customization (From slider panel)
-    // this.scene.registerBeforeRender(() => {
-    //   if (this.characterAssets?.skeletons) {
-    //     this.characterAssets.skeletons.forEach((skeleton) => {
-    //       this.applyBoneScales(skeleton)
-    //     })
-    //   }
-    // })
-
     if (this.characterRoot && this.characterAttribute.classConfig.needDebug) {
       const axes = new BABYLON.AxesViewer(this.scene, 1)
       axes.xAxis.parent = this.characterRoot
       axes.yAxis.parent = this.characterRoot
       axes.zAxis.parent = this.characterRoot
+    }
+
+    const idleName = Object.keys(this.animations).find((k) =>
+      k.includes("UnArmed-Idle"),
+    )
+    if (idleName) {
+      this.playAnimation(idleName)
+    } else {
+      console.warn(
+        "⚠️ Idle animation not found in:",
+        Object.keys(this.animations),
+      )
     }
 
     this.isLoaded = true
@@ -401,68 +278,6 @@ export class EagerWing___Character {
     return this.bonesCollection[name]?.bone ?? null
   }
 
-  /**
-   * Logs all bones with names starting with "DEF-" in a Babylon.js skeleton.
-   *
-   * @param {BABYLON.Skeleton} skeleton - The skeleton to inspect
-   */
-  private logBones(prefix: string = "", skeleton: BABYLON.Skeleton) {
-    if (!skeleton) {
-      console.warn("No skeleton provided!")
-      return
-    }
-
-    const defBones =
-      prefix === ""
-        ? skeleton.bones
-        : skeleton.bones.filter((bone) => bone.name.startsWith(prefix))
-
-    console.group(`Bones in Skeleton: ${skeleton.name}`)
-    defBones.forEach((bone) => {
-      if (SKELETON_MAP.female && !SKELETON_MAP.female[bone.name.toString()])
-        console.log(bone.name)
-    })
-    console.groupEnd()
-
-    console.info(`Found ${defBones.length} ${prefix} bones.`)
-  }
-
-  /**
-   * @private
-   * Apply current scale values from controlPanelBones to all registered bones
-   *
-   * @param { BABYLON.Skeleton } skeleton - Skeleton to apply the scale
-   *
-   * @returns { void }
-   */
-  private applyBoneScales(skeleton: BABYLON.Skeleton): void {
-    Object.keys(this.controlPanelBones).forEach((boneName) => {
-      const boneData = this.controlPanelBones[boneName]
-      if (boneData?.isDirty) {
-        const scaleValue = boneData.value
-        const scaleVector = new BABYLON.Vector3(
-          scaleValue,
-          scaleValue,
-          scaleValue,
-        )
-        this.resizeBone(skeleton, boneName, scaleVector)
-        boneData.isDirty = false
-      }
-    })
-    if (this.characterAssets?.meshes) {
-      this.characterAssets.meshes.forEach((mesh) => {
-        if (mesh.skeleton === skeleton) {
-          mesh.refreshBoundingInfo({ applySkeleton: true })
-          mesh.markAsDirty()
-          mesh.computeWorldMatrix(true)
-          if (mesh instanceof BABYLON.Mesh && mesh.geometry) {
-            mesh.geometry.applyToMesh(mesh)
-          }
-        }
-      })
-    }
-  }
-
   public applySkinTone(color: string) {
     const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
       this.scene.getMeshByName(MESH_NAME.Body)
@@ -489,347 +304,209 @@ export class EagerWing___Character {
    * @returns { void }
    */
   public update(key: KeyState, camera: BABYLON.ArcRotateCamera): void {
+    if (!this.isLoaded || !this.characterRoot || !camera) return
+
     const { w, a, s, d } = key
+    const moving = w || a || s || d
     let moveDir = new BABYLON.Vector3(0, 0, 0)
+    let nextAnimName = `UnArmed-Idle_${this.characterAttribute.modelId}`
 
-    if (this.characterRoot && camera && (w || a || s || d)) {
-      const camDir = camera.getDirection(BABYLON.Vector3.Forward()).normalize()
-      camDir.y = 0
-      camDir.normalize()
+    const camForward = camera
+      .getDirection(BABYLON.Vector3.Forward())
+      .normalize()
+    camForward.y = 0
+    camForward.normalize()
 
-      const camRight = BABYLON.Vector3.Cross(
-        camDir,
-        BABYLON.Vector3.Up(),
-      ).normalize()
-      if (w) moveDir.addInPlace(camDir)
-      if (s) moveDir.subtractInPlace(camDir)
-      if (a) moveDir.addInPlace(camRight)
-      if (d) moveDir.subtractInPlace(camRight)
+    const camRight = BABYLON.Vector3.Cross(
+      BABYLON.Vector3.Up(),
+      camForward,
+    ).normalize()
 
-      if (moveDir.lengthSquared() > 0) {
-        moveDir.normalize()
-        this.characterRoot.position.addInPlace(
-          moveDir.scale(this.characterAttribute.speed),
-        )
+    if (w) {
+      moveDir.addInPlace(camForward)
+      nextAnimName = `Unarmed-RunForward_${this.characterAttribute.modelId}`
+    }
+    if (s) {
+      moveDir.subtractInPlace(camForward)
+      nextAnimName = `Unarmed-Backward_${this.characterAttribute.modelId}`
+    }
+    if (a) {
+      moveDir.subtractInPlace(camRight)
+      nextAnimName = `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
+    }
+    if (d) {
+      moveDir.addInPlace(camRight)
+      nextAnimName = `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
+    }
 
-        const targetAngle = Math.atan2(camDir.x, camDir.z) + Math.PI
-        this.characterRoot.rotation.y = BABYLON.Scalar.Lerp(
-          this.characterRoot.rotation.y,
-          targetAngle,
-          this.characterAttribute.turnSpeed,
-        )
+    if (moving) {
+      moveDir.normalize()
+      this.characterRoot.position.addInPlace(
+        moveDir.scale(this.characterAttribute.speed),
+      )
+
+      const camFacing = Math.atan2(camForward.x, camForward.z)
+      this.characterRoot.rotation.y = BABYLON.Scalar.Lerp(
+        this.characterRoot.rotation.y,
+        camFacing,
+        this.characterAttribute.turnSpeed,
+      )
+    }
+
+    if (this.currentAnimName !== nextAnimName) {
+      this.playAnimation(nextAnimName)
+    }
+
+    camera.target = this.characterRoot.position.add(
+      new BABYLON.Vector3(0, 1, 0),
+    )
+  }
+
+  private stopAllAnimations(): void {
+    Object.values(this.animations).forEach((ag) => {
+      try {
+        ag.stop()
+      } catch {}
+      try {
+        if (typeof ag.setWeightForAllAnimatables === "function") {
+          ag.setWeightForAllAnimatables(0)
+        }
+      } catch {}
+    })
+    this.currentAnimation = undefined
+    this.currentAnimName = null
+    if (this.fadeObserver) {
+      try {
+        this.scene.onBeforeRenderObservable.remove(this.fadeObserver)
+      } catch {}
+      this.fadeObserver = undefined
+    }
+  }
+
+  private playAnimation(name: string, duration = 300) {
+    const next = this.animations[name]
+    if (!next) return
+
+    if (this.currentAnimName === name && this.currentAnimation === next) return
+
+    const idleName = `UnArmed-Idle_${this.characterAttribute.modelId}`
+
+    if (name === idleName) {
+      this.stopAllAnimations()
+      try {
+        next.stop()
+      } catch {}
+      next.play(true)
+      if (typeof next.setWeightForAllAnimatables === "function") {
+        next.setWeightForAllAnimatables(1)
+      }
+      this.currentAnimation = next
+      this.currentAnimName = name
+      return
+    }
+
+    if (!this.currentAnimation) {
+      try {
+        next.stop()
+      } catch {}
+      next.play(true)
+      if (typeof next.setWeightForAllAnimatables === "function") {
+        next.setWeightForAllAnimatables(1)
+      }
+      this.currentAnimation = next
+      this.currentAnimName = name
+      return
+    }
+
+    if (this.currentAnimation !== next) {
+      this.crossFade(this.currentAnimation, next, duration)
+    } else {
+      next.play(true)
+      if (typeof next.setWeightForAllAnimatables === "function") {
+        next.setWeightForAllAnimatables(1)
       }
     }
 
-    if (this.characterRoot) {
-      camera.target = new BABYLON.Vector3(
-        this.characterRoot.position.x,
-        this.characterRoot.position.y + 1,
-        this.characterRoot.position.z,
-      )
-    }
+    this.currentAnimation = next
+    this.currentAnimName = name
   }
 
-  /**
-   * @private
-   * Register skeleton bones to control panel for dynamic resizing
-   *
-   * @param { BABYLON.Skeleton } skeleton - Character skeleton collection to register on bones
-   *
-   * @returns { void }
-   */
-  private controlPanelRegisterBones(skeleton: BABYLON.Skeleton): void {
-    const keyBones = [
-      "pelvis",
-      "breast",
-      "arm",
-      "thigh",
-      "shoulder",
-      "neck",
-      "head",
-      "forearm",
+  private crossFade(
+    from: BABYLON.AnimationGroup,
+    to: BABYLON.AnimationGroup,
+    duration: number,
+  ) {
+    if (!this.scene) return
 
-      /** Facial Control. */
-      "forehead",
-      "nose",
-      "lip",
-      "jaw",
-      "chin",
-      "ear",
-      "brow",
-      "lid",
-      // "eye",
-    ]
-    const processedPairs: Set<string> = new Set()
+    if (this.fadeObserver) {
+      try {
+        this.scene.onBeforeRenderObservable.remove(this.fadeObserver)
+      } catch {}
+      this.fadeObserver = undefined
+    }
 
-    skeleton.bones.forEach((bone) => {
-      if (
-        bone.name.startsWith("DEF-") &&
-        keyBones.some((key) => bone.name.toLowerCase().includes(key)) &&
-        !this.controlPanelBones[bone.name]
-      ) {
-        const isLeft = bone.name.endsWith(".L")
-        const isRight = bone.name.endsWith(".R")
-        const isLeft001 = bone.name.endsWith(".L.001")
-        const isRight001 = bone.name.endsWith(".R.001")
-        const isLeft002 = bone.name.endsWith(".L.002")
-        const isRight002 = bone.name.endsWith(".R.002")
-        const isLeft003 = bone.name.endsWith(".L.003")
-        const isRight003 = bone.name.endsWith(".R.003")
-        const isLeft004 = bone.name.endsWith(".L.004")
-        const isRight004 = bone.name.endsWith(".R.004")
-        const baseName = isLeft
-          ? bone.name.replace(".L", "")
-          : isRight
-            ? bone.name.replace(".R", "")
-            : isLeft001
-              ? bone.name.replace(".L.001", "")
-              : isRight001
-                ? bone.name.replace(".R.001", "")
-                : isLeft002
-                  ? bone.name.replace(".L.002", "")
-                  : isRight002
-                    ? bone.name.replace(".R.002", "")
-                    : isLeft003
-                      ? bone.name.replace(".L.003", "")
-                      : isRight003
-                        ? bone.name.replace(".R.003", "")
-                        : isLeft004
-                          ? bone.name.replace(".L.004", "")
-                          : isRight004
-                            ? bone.name.replace(".R.004", "")
-                            : bone.name
+    const start = performance.now()
 
-        // This block is used to identify paired body part. But not in used currently
-        /**
-         * const pairKey =
-          isLeft ||
-          isRight ||
-          isLeft001 ||
-          isRight001 ||
-          isLeft002 ||
-          isRight002
-            ? baseName
-            : bone.name
-         */
+    try {
+      from.stop()
+    } catch {}
+    try {
+      from.play(true)
+    } catch {}
+    try {
+      to.stop()
+    } catch {}
+    try {
+      to.play(true)
+    } catch {}
 
-        if (
-          (isLeft ||
-            isRight ||
-            isLeft001 ||
-            isRight001 ||
-            isLeft002 ||
-            isRight002 ||
-            isLeft003 ||
-            isRight003 ||
-            isLeft004 ||
-            isRight004) &&
-          processedPairs.has(baseName)
-        ) {
-          return
+    if (typeof from.setWeightForAllAnimatables === "function") {
+      try {
+        from.setWeightForAllAnimatables(1)
+      } catch {}
+    }
+    if (typeof to.setWeightForAllAnimatables === "function") {
+      try {
+        to.setWeightForAllAnimatables(0)
+      } catch {}
+    }
+
+    this.fadeObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const now = performance.now()
+      const alpha = Math.min(1, (now - start) / duration)
+
+      if (typeof from.setWeightForAllAnimatables === "function") {
+        try {
+          from.setWeightForAllAnimatables(1 - alpha)
+        } catch {}
+      }
+      if (typeof to.setWeightForAllAnimatables === "function") {
+        try {
+          to.setWeightForAllAnimatables(alpha)
+        } catch {}
+      }
+
+      if (alpha >= 1) {
+        try {
+          from.stop()
+        } catch {}
+        if (typeof to.setWeightForAllAnimatables === "function") {
+          try {
+            to.setWeightForAllAnimatables(1)
+          } catch {}
         }
 
-        // Check for overrides based on baseName (without DEF-)
-        const overrideKey = baseName.replace("DEF-", "").toLowerCase()
-        const config = this.boneConfigOverrides[overrideKey] || {
-          minimum: 0.5,
-          maximum: 3.0,
+        if (this.fadeObserver) {
+          try {
+            this.scene.onBeforeRenderObservable.remove(this.fadeObserver)
+          } catch {}
+          this.fadeObserver = undefined
         }
-
-        this.controlPanelBones[bone.name] = {
-          minimum: config.minimum,
-          maximum: config.maximum,
-          value: 1.0,
-          step: 0.0001,
-          isDirty: false,
-        }
-
-        if (
-          isLeft ||
-          isRight ||
-          isLeft001 ||
-          isRight001 ||
-          isLeft002 ||
-          isRight002 ||
-          isLeft003 ||
-          isRight003 ||
-          isLeft004 ||
-          isRight004
-        ) {
-          const pairedBoneNames = [
-            `${baseName}.L`,
-            `${baseName}.R`,
-            `${baseName}.L.001`,
-            `${baseName}.R.001`,
-            `${baseName}.L.002`,
-            `${baseName}.R.002`,
-            `${baseName}.L.003`,
-            `${baseName}.R.003`,
-            `${baseName}.L.004`,
-            `${baseName}.R.004`,
-          ].filter((name) => name !== bone.name)
-          pairedBoneNames.forEach((pairedBoneName) => {
-            const pairedBone = skeleton.bones.find(
-              (b) => b.name === pairedBoneName,
-            )
-            if (pairedBone && !this.controlPanelBones[pairedBoneName]) {
-              this.controlPanelBones[pairedBoneName] = {
-                minimum: config.minimum,
-                maximum: config.maximum,
-                value: 1.0,
-                step: 0.0001,
-                isDirty: false,
-              }
-            }
-          })
-          processedPairs.add(baseName)
-        }
+        this.currentAnimation = to
+        this.currentAnimName = to.name
       }
     })
   }
-
-  /**
-   * @private
-   * Resize a bone in the skeleton based on its name
-   *
-   * @param skeleton - The skeleton containing the bones
-   * @param name - Exact bone name to match
-   * @param scale - The scale vector to apply
-   * @param inverse - Whether to apply inverse scaling (e.g., 1/scale)
-   *
-   * @returns {Array<{name: string, originalScale: BABYLON.Vector3}>} - Original scales of matched bones
-   */
-  private resizeBone(
-    skeleton: BABYLON.Skeleton,
-    name: string,
-    scale: BABYLON.Vector3,
-  ): Array<{ name: string; originalScale: BABYLON.Vector3 }> {
-    const bone = skeleton.bones.find((b) => b.name === name)
-    const originalScales: Array<{
-      name: string
-      originalScale: BABYLON.Vector3
-    }> = []
-
-    if (!bone) {
-      return originalScales
-    }
-
-    /** Identify paired bone and children. */
-    const isLeft = name.endsWith(".L")
-    const isRight = name.endsWith(".R")
-    const isLeft001 = name.endsWith(".L.001")
-    const isRight001 = name.endsWith(".R.001")
-    const isLeft002 = name.endsWith(".L.002")
-    const isRight002 = name.endsWith(".R.002")
-    const baseName = isLeft
-      ? name.replace(".L", "")
-      : isRight
-        ? name.replace(".R", "")
-        : isLeft001
-          ? name.replace(".L.001", "")
-          : isRight001
-            ? name.replace(".R.001", "")
-            : isLeft002
-              ? name.replace(".L.002", "")
-              : isRight002
-                ? name.replace(".R.002", "")
-                : name
-    const pairedBoneNames = [
-      `${baseName}.L`,
-      `${baseName}.R`,
-      `${baseName}.L.001`,
-      `${baseName}.R.001`,
-      `${baseName}.L.002`,
-      `${baseName}.R.002`,
-    ].filter((n) => n !== name)
-    const pairedBones = pairedBoneNames
-      .map((pairedName) => skeleton.bones.find((b) => b.name === pairedName))
-      .filter((b) => b) as BABYLON.Bone[]
-
-    originalScales.push({
-      name: bone.name,
-      originalScale: bone.scaling.clone(),
-    })
-    pairedBones.forEach((pairedBone) => {
-      originalScales.push({
-        name: pairedBone.name,
-        originalScale: pairedBone.scaling.clone(),
-      })
-    })
-
-    /** Apply scale directly (0.5 = smaller, 3.0 = larger). */
-    const effectiveScale = new BABYLON.Vector3(
-      Math.max(scale.x, 0.8),
-      Math.max(scale.y, 0.8),
-      Math.max(scale.z, 0.8),
-    )
-
-    /** Animate main bone. */
-    const animation = new BABYLON.Animation(
-      "boneScale",
-      "scaling",
-      30,
-      BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
-      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
-    )
-    animation.setKeys([
-      { frame: 0, value: bone.scaling.clone() },
-      { frame: 15, value: effectiveScale }, // 0.5s transition
-    ])
-    bone.animations = [animation]
-    this.scene.beginAnimation(bone, 0, 15, false, 1.0)
-
-    /** Animate paired bones */
-    pairedBones.forEach((pairedBone) => {
-      const pairedAnimation = new BABYLON.Animation(
-        "boneScale",
-        "scaling",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
-      )
-      pairedAnimation.setKeys([
-        { frame: 0, value: pairedBone.scaling.clone() },
-        { frame: 15, value: effectiveScale },
-      ])
-      pairedBone.animations = [pairedAnimation]
-      this.scene.beginAnimation(pairedBone, 0, 15, false, 1.0)
-    })
-
-    bone.scaling = effectiveScale
-    pairedBones.forEach((pairedBone) => {
-      pairedBone.scaling = effectiveScale
-      // pairedBone._constraint = null
-      pairedBone.markAsDirty()
-      pairedBone._markAsDirtyAndCompose()
-      pairedBone.updateMatrix(pairedBone.getLocalMatrix(), true, true)
-    })
-
-    // bone._constraint = null
-    bone.markAsDirty()
-    bone._markAsDirtyAndCompose()
-    bone.updateMatrix(bone.getLocalMatrix(), true, true)
-
-    skeleton.computeAbsoluteTransforms()
-    skeleton.prepare()
-
-    return originalScales
-  }
-
-  // TODO : Animation preparation
-  // private updateAnimation(key: KeyState): void {
-  //   if (!this.isLoaded) {
-  //     return
-  //   }
-  // }
-
-  // public getRoot(): BABYLON.TransformNode | null {
-  //   return this.characterRoot
-  // }
-
-  // public getRegisteredBones() {
-  //   return this.controlPanelBones
-  // }
 
   get getRoot(): BABYLON.TransformNode | null {
     return this.characterRoot
