@@ -133,6 +133,9 @@ export class EagerWing___LabControl {
       if (e.key === "a") this.keyboardKey.a = true
       if (e.key === "s") this.keyboardKey.s = true
       if (e.key === "d") this.keyboardKey.d = true
+
+      if (e.key === "x")
+        this.characterInstances.get("mainPlayer")?.toogleCombatMode()
     })
 
     window.addEventListener("keyup", (e) => {

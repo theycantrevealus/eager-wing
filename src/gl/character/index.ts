@@ -49,6 +49,9 @@ export class EagerWing___Character {
   private labelPlane: BABYLON.Mesh | null = null
   private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
 
+  /** Character Mode */
+  private combatMode: boolean = false
+
   private controlPanelBones: Record<
     string,
     {
@@ -59,18 +62,6 @@ export class EagerWing___Character {
       isDirty: boolean
     }
   > = {}
-
-  private boneConfigOverrides: {
-    [key: string]: { minimum: number; maximum: number }
-  } = {
-    // TODO : This block should load from system config
-    breast: { minimum: 0.8, maximum: 1.0 },
-    pelvis: { minimum: 0.9, maximum: 1.8 },
-    upper_arm: { minimum: 1.0, maximum: 1.1 },
-    thigh: { minimum: 1, maximum: 1.2 },
-    shoulder: { minimum: 0.9, maximum: 1.2 },
-    forearm: { minimum: 1.1, maximum: 1.2 },
-  }
 
   // private sideSpeed: number = 0.05
   // private runSpeed: number = 0.3
@@ -306,7 +297,7 @@ export class EagerWing___Character {
   public update(key: KeyState, camera: BABYLON.ArcRotateCamera): void {
     if (!this.isLoaded || !this.characterRoot || !camera) return
 
-    const { w, a, s, d } = key
+    const { w, a, s, d, x } = key
     const moving = w || a || s || d
     let moveDir = new BABYLON.Vector3(0, 0, 0)
     let nextAnimName = `UnArmed-Idle_${this.characterAttribute.modelId}`
@@ -322,21 +313,38 @@ export class EagerWing___Character {
       camForward,
     ).normalize()
 
+    /**---------------------------------------------------------------------- movement */
     if (w) {
       moveDir.addInPlace(camForward)
-      nextAnimName = `Unarmed-RunForward_${this.characterAttribute.modelId}`
+      if (this.combatMode) {
+        nextAnimName = `Armed-RunForward_${this.characterAttribute.modelId}`
+      } else {
+        nextAnimName = `Unarmed-RunForward_${this.characterAttribute.modelId}`
+      }
     }
     if (s) {
       moveDir.subtractInPlace(camForward)
-      nextAnimName = `Unarmed-Backward_${this.characterAttribute.modelId}`
+      if (this.combatMode) {
+        nextAnimName = `Armed-WalkBack_${this.characterAttribute.modelId}`
+      } else {
+        nextAnimName = `Unarmed-Backward_${this.characterAttribute.modelId}`
+      }
     }
     if (a) {
       moveDir.subtractInPlace(camRight)
-      nextAnimName = `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
+      if (this.combatMode) {
+        nextAnimName = `Armed-WalkLeft_${this.characterAttribute.modelId}`
+      } else {
+        nextAnimName = `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
+      }
     }
     if (d) {
       moveDir.addInPlace(camRight)
-      nextAnimName = `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
+      if (this.combatMode) {
+        nextAnimName = `Armed-WalkRight_${this.characterAttribute.modelId}`
+      } else {
+        nextAnimName = `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
+      }
     }
 
     if (moving) {
@@ -569,5 +577,9 @@ export class EagerWing___Character {
 
     this.characterAssets = null as any
     this.isLoaded = false
+  }
+
+  public toogleCombatMode() {
+    this.combatMode = !this.combatMode
   }
 }
