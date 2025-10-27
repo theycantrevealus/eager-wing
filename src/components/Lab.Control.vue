@@ -21,15 +21,92 @@
           @pointerdown.stop="startDrag(index, $event)"
         >
           {{ panel.title }}
-          <button class="min-btn" @click.stop="toggleMinimize(index)">
-            {{ panel.minimized ? "🗖" : "🗕" }}
+          <button class="min-btn" @click.stop="toggleClose(index)">
+            {{ panel.minimized ? "🗖" : "⨉" }}
           </button>
         </header>
 
         <!-- Panel Content -->
         <div v-show="!panel.minimized" class="panel-content">
-          <p>Panel #{{ index + 1 }}</p>
-          <p>You can drag or resize me.</p>
+          <div class="character-info"></div>
+          <div class="inventory">
+            <table>
+              <tbody>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Resize handle -->
@@ -170,7 +247,18 @@ export default defineComponent({
       >,
 
       // Panel Manager
-      panels: [],
+      panels: [
+        {
+          id: 1,
+          title: "Inventory",
+          x: 60,
+          y: 60,
+          width: 450,
+          height: 850,
+          z: 1,
+          minimized: false,
+        },
+      ],
       panelLib: [
         {
           id: 1,
@@ -271,7 +359,7 @@ export default defineComponent({
       document.removeEventListener("pointerup", this.onPointerUp)
     },
 
-    toggleMinimize(index) {
+    toggleClose(index: number) {
       // this.panels[index].minimized = !this.panels[index].minimized
       this.panels.splice(index, 1)
     },
