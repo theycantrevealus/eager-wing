@@ -660,7 +660,16 @@ export class EagerWing___Character {
     this.isLoaded = false
   }
 
-  public toogleCombatMode() {
+  public toogleCombatMode(
+    getAnimationGroup: Record<string, BABYLON.AnimationGroup> | null,
+  ) {
+    if (getAnimationGroup)
+      this.playAnimation(
+        getAnimationGroup,
+        this.combatMode
+          ? `UnArmed-Idle_instance_${this.characterAttribute.modelId}`
+          : `Armed-Idle_instance_${this.characterAttribute.modelId}`,
+      )
     this.combatMode = !this.combatMode
   }
 }

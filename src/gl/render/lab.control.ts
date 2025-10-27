@@ -176,7 +176,12 @@ export class EagerWing___LabControl {
       if (e.code === "Space") this.keyboardKey.space = true
 
       if (e.key === "x")
-        this.characterInstances.get("mainPlayer")?.instance.toogleCombatMode()
+        this.characterInstances
+          .get("mainPlayer")
+          ?.instance.toogleCombatMode(
+            this.characterInstances.get("mainPlayer")?.getAnimationGroup ??
+              null,
+          )
     })
 
     window.addEventListener("keyup", (e) => {
