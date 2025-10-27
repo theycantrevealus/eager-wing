@@ -3,7 +3,6 @@ import type {
   CharacterAttribute,
   CharacterBoneCollection,
 } from "__&types/Character"
-import type { Matrix } from "__&types/Matrix"
 import { EagerWing___Label } from "__&GL/label"
 import type { KeyState } from "__&interfaces/keyboard"
 import { MESH_NAME } from "__&constants/map.mesh"
@@ -27,6 +26,11 @@ export class EagerWing___Character {
   /** Character attribute contains information, render rule, style, init position, etc. */
   private characterAttribute: CharacterAttribute
 
+  private characterSharedAsset: BABYLON.AssetContainer
+
+  /** Entries of character instances */
+  private instantiateEntries: BABYLON.InstantiatedEntries | null = null
+
   /** Shared asset from main scene. */
   private characterAssets: BABYLON.AssetContainer | null = null
 
@@ -36,11 +40,8 @@ export class EagerWing___Character {
   /** Registered humanoid bones formatted with humanly name */
   private bonesCollection: CharacterBoneCollection = {}
 
-  /** Animation collection */
-  public animations: Record<string, BABYLON.AnimationGroup> = {}
-
   /** Character processing promise. */
-  private loadPromise: Promise<void>
+  // private loadPromise: Promise<void>
 
   /** Character processing promise result. */
   protected isLoaded: boolean = false
@@ -109,135 +110,75 @@ export class EagerWing___Character {
     /** Init attribute for character configuration. */
     this.characterAttribute = characterAttribute
 
-    /** Load asset asyncronously. */
-    this.loadPromise = this.initCharacter(
-      characterAttribute.position,
-      characterSharedAsset,
-    )
+    this.characterSharedAsset = characterSharedAsset
   }
 
   /**
    * @protected
-   * @async
    * Character model initiate from shared asset
    *   1. Clone available skeleton
    *   2. Config style attribute
    *
-   * @param { Matrix } position - Character set position
-   * @param { BABYLON.AssetContainer } asset - Shared asset
+   * * @param { BABYLON.AssetContainer } assetContainer - Shared asset
+   * @param { BABYLON.AssetContainer } position - Character set position
    *
-   * @returns { void }
+   * @returns
    */
-  protected async initCharacter(
-    position: Matrix,
-    asset: BABYLON.AssetContainer,
-  ): Promise<void> {
-    if (!asset) throw new Error("GLTFCharacterTemplate not initialized")
-
-    this.characterAssets = new BABYLON.AssetContainer(this.scene)
-
-    this.characterRoot = new BABYLON.TransformNode(
-      `character_root_${this.characterAttribute.modelId}`,
-      this.scene,
+  public createCharacter(): {
+    root: BABYLON.TransformNode
+    getAnimationGroup: Record<string, BABYLON.AnimationGroup>
+  } {
+    const assetContainer = this.characterSharedAsset
+    const position = new BABYLON.Vector3(
+      this.characterAttribute.position.x,
+      this.characterAttribute.position.y,
+      this.characterAttribute.position.z,
     )
-
-    this.characterRoot.position = new BABYLON.Vector3(
-      position.x,
-      position.y,
-      position.z,
-    )
-
-    /** Clone skeletons. */
-    this.characterAssets.skeletons = asset.skeletons.map((skeleton) =>
-      skeleton.clone(`${skeleton.name}_${this.characterAttribute.modelId}`),
-    )
-
-    if (this.characterAssets.skeletons[0]) {
-      // this.logBones("DEF-", this.characterAssets.skeletons[0])
-      this.registerBone("DEF-", this.characterAssets.skeletons[0])
+    for (const ag of assetContainer.animationGroups) {
+      ag.stop()
+      ag.reset()
     }
 
-    /** Clone meshes. */
-    this.characterAssets.meshes = asset.meshes
-      .map((mesh) => {
-        const clone = mesh.clone(
-          `${mesh.name}_${this.characterAttribute.modelId}`,
-          null,
-        )
+    const { rootNodes, animationGroups } =
+      assetContainer.instantiateModelsToScene(
+        (name) => name + "_instance_" + this.characterAttribute.modelId,
+      )
 
-        if (clone) {
-          clone.isVisible = true
-          clone.setEnabled(true)
-          clone.scaling.scaleInPlace(
-            this.characterAttribute.information.dimension
-              ? this.characterAttribute.information.dimension.scale
-              : 0,
-          )
-        }
-        return clone
-      })
-      .filter((m): m is BABYLON.AbstractMesh => m !== null)
+    const root = new BABYLON.TransformNode("root_" + Math.random(), this.scene)
+    root.position.copyFrom(position)
 
-    /** Clone materials. */
-    this.characterAssets.materials = asset.materials
-      .map((mat) => mat.clone(`${mat.name}_${this.characterAttribute.modelId}`))
-      .filter((m) => m !== null)
+    for (const node of rootNodes) {
+      node.parent = root
+    }
 
-    this.characterAssets.animationGroups = asset.animationGroups.map(
-      (group) => {
-        group.stop()
+    const getAnimationGroup: Record<string, BABYLON.AnimationGroup> = {}
 
-        const animateClone = group.clone(
-          `${group.name}_${this.characterAttribute.modelId}`,
-          (target) =>
-            this.characterAssets!.meshes.find((m) =>
-              m.name.includes(target.name),
-            ) || target,
-        )
+    for (const ag of animationGroups) {
+      getAnimationGroup[ag.name] = ag
+      ag.stop()
+      ag.reset()
+    }
 
-        this.animations[`${group.name}_${this.characterAttribute.modelId}`] =
-          animateClone
-        return animateClone
-      },
-    )
-
-    this.stopAllAnimations()
-
-    /** Set up character root : So the instance could be re-use or handle from other spot. */
-    this.characterAssets.meshes.forEach((mesh) => {
-      mesh.setParent(this.characterRoot)
-      mesh.position.set(0, 0, 0)
-    })
-
-    this.characterAssets.addAllToScene()
-
-    /** Provide label for character such like nickname or else. */
     ;({ plane: this.labelPlane, observer: this.labelUpdateObserver } =
       this.label.makeLabel(
-        this.characterAttribute.information.name,
-        this.characterRoot,
+        this.characterAttribute.information?.name ?? "Unnamed",
+        root,
       ))
 
-    if (this.characterRoot && this.characterAttribute.classConfig.needDebug) {
+    // Add debug axes if needed
+    if (root && this.characterAttribute.classConfig?.needDebug) {
       const axes = new BABYLON.AxesViewer(this.scene, 1)
-      axes.xAxis.parent = this.characterRoot
-      axes.yAxis.parent = this.characterRoot
-      axes.zAxis.parent = this.characterRoot
+      axes.xAxis.parent = root
+      axes.yAxis.parent = root
+      axes.zAxis.parent = root
     }
 
-    const idleName = Object.keys(this.animations).find((k) =>
-      k.includes("UnArmed-Idle"),
+    this.playAnimation(
+      getAnimationGroup,
+      `UnArmed-Idle_instance_${this.characterAttribute.modelId}`,
     )
-    if (idleName) {
-      this.playAnimation(idleName)
-    } else {
-      console.warn(
-        "⚠️ Idle animation not found in:",
-        Object.keys(this.animations),
-      )
-    }
 
-    this.isLoaded = true
+    return { root, getAnimationGroup }
   }
 
   /**
@@ -298,7 +239,7 @@ export class EagerWing___Character {
    * @returns
    */
   public async waitForLoad(): Promise<void> {
-    return this.loadPromise
+    // return this.loadPromise
   }
 
   /**
@@ -307,13 +248,21 @@ export class EagerWing___Character {
    *
    * @returns { void }
    */
-  public update(key: KeyState, camera: BABYLON.ArcRotateCamera): void {
-    if (!this.isLoaded || !this.characterRoot || !camera) return
+  public update(
+    rootInstance: BABYLON.TransformNode,
+    animationGroup: Record<string, BABYLON.AnimationGroup>,
+    modelID: string,
+    key: KeyState,
+    camera: BABYLON.ArcRotateCamera,
+  ): void {
+    if (!rootInstance || !camera) return
 
     const { w, a, s, d, space } = key
     const moving = w || a || s || d
     let moveDir = new BABYLON.Vector3(0, 0, 0)
-    let nextAnimName = `UnArmed-Idle_${this.characterAttribute.modelId}`
+    let nextAnimName = this.combatMode
+      ? `Armed-Idle_instance_${modelID}`
+      : `UnArmed-Idle_instance_${modelID}`
 
     const camForward = camera
       .getDirection(BABYLON.Vector3.Forward())
@@ -330,37 +279,37 @@ export class EagerWing___Character {
     if (w) {
       moveDir.addInPlace(camForward)
       nextAnimName = this.combatMode
-        ? `Armed-RunForward_${this.characterAttribute.modelId}`
-        : `Unarmed-RunForward_${this.characterAttribute.modelId}`
+        ? `Armed-RunForward_instance_${modelID}`
+        : `Unarmed-RunForward_instance_${modelID}`
     }
     if (s) {
       moveDir.subtractInPlace(camForward)
       nextAnimName = this.combatMode
-        ? `Armed-WalkBack_${this.characterAttribute.modelId}`
-        : `Unarmed-Backward_${this.characterAttribute.modelId}`
+        ? `Armed-WalkBack_instance_${modelID}`
+        : `Unarmed-Backward_instance_${modelID}`
     }
     if (a) {
       moveDir.subtractInPlace(camRight)
       nextAnimName = this.combatMode
-        ? `Armed-WalkLeft_${this.characterAttribute.modelId}`
-        : `Unarmed-StrafeLeft_${this.characterAttribute.modelId}`
+        ? `Armed-WalkLeft_instance_${modelID}`
+        : `Unarmed-StrafeLeft_instance_${modelID}`
     }
     if (d) {
       moveDir.addInPlace(camRight)
       nextAnimName = this.combatMode
-        ? `Armed-WalkRight_${this.characterAttribute.modelId}`
-        : `Unarmed-StrafeRight_${this.characterAttribute.modelId}`
+        ? `Armed-WalkRight_instance_${modelID}`
+        : `Unarmed-StrafeRight_instance_${modelID}`
     }
 
     if (moving) {
       moveDir.normalize()
-      this.characterRoot.position.addInPlace(
+      rootInstance.position.addInPlace(
         moveDir.scale(this.characterAttribute.speed),
       )
 
       const camFacing = Math.atan2(camForward.x, camForward.z)
-      this.characterRoot.rotation.y = BABYLON.Scalar.Lerp(
-        this.characterRoot.rotation.y,
+      rootInstance.rotation.y = BABYLON.Scalar.Lerp(
+        rootInstance.rotation.y,
         camFacing,
         this.characterAttribute.turnSpeed,
       )
@@ -368,7 +317,7 @@ export class EagerWing___Character {
 
     /** ---------------------------------------------------------------------- jump */
     const deltaTime = (this.engine.getDeltaTime() || 16) / 1000
-    const origin = this.characterRoot.position.add(
+    const origin = rootInstance.position.add(
       new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
     )
     const down = new BABYLON.Vector3(0, -1, 0)
@@ -397,14 +346,14 @@ export class EagerWing___Character {
 
       // TODO : Jump animation
       // nextAnimName = `Armed-RunJump_${this.characterAttribute.modelId}`
-      this.playAnimation(`Armed-RunJump_${this.characterAttribute.modelId}`)
+      this.playAnimation(animationGroup, `Armed-RunJump_instance_${modelID}`)
     }
 
     if (this.isJumping || !grounded) {
       this.verticalVelocity -= this.gravityForce * deltaTime
-      this.characterRoot.position.y += this.verticalVelocity * deltaTime
+      rootInstance.position.y += this.verticalVelocity * deltaTime
 
-      const originAfter = this.characterRoot.position.add(
+      const originAfter = rootInstance.position.add(
         new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
       )
       const rayAfter = new BABYLON.Ray(originAfter, down, rayLength)
@@ -421,11 +370,11 @@ export class EagerWing___Character {
       if (landed) {
         this.isJumping = false
         this.verticalVelocity = 0
-        this.characterRoot.position.y =
+        rootInstance.position.y =
           pickAfter!.pickedPoint!.y - this.feetOffset + 0.01
 
         // nextAnimName = `Armed-RunJump_${this.characterAttribute.modelId}`
-        this.playAnimation(`Armed-RunJump_${this.characterAttribute.modelId}`)
+        this.playAnimation(animationGroup, `Armed-RunJump_instance_${modelID}`)
         /**
            * 
            * 
@@ -444,17 +393,17 @@ export class EagerWing___Character {
     } else {
       if (hasHit) {
         const targetY = groundY - this.feetOffset + 0.01
-        const curY = this.characterRoot.position.y
+        const curY = rootInstance.position.y
         const diff = targetY - curY
         if (Math.abs(diff) > 0.001) {
           const snapSpeed = 30 // higher = faster snap
-          this.characterRoot.position.y = BABYLON.Scalar.Lerp(
+          rootInstance.position.y = BABYLON.Scalar.Lerp(
             curY,
             targetY,
             Math.min(1, snapSpeed * deltaTime),
           )
         } else {
-          this.characterRoot.position.y = targetY
+          rootInstance.position.y = targetY
         }
       } else {
         this.isJumping = true
@@ -462,13 +411,11 @@ export class EagerWing___Character {
     }
     /** ---------------------------------------------------------------------- end of jump */
 
-    camera.target = this.characterRoot.position.add(
-      new BABYLON.Vector3(0, 1, 0),
-    )
+    camera.target = rootInstance.position.add(new BABYLON.Vector3(0, 1, 0))
 
     /** ---------------------------------------------------------------------- animation */
     if (this.currentAnimName !== nextAnimName) {
-      this.playAnimation(nextAnimName)
+      this.playAnimation(animationGroup, nextAnimName)
     }
   }
 
@@ -490,8 +437,10 @@ export class EagerWing___Character {
     return pick ?? null
   }
 
-  private stopAllAnimations(): void {
-    Object.values(this.animations).forEach((ag) => {
+  private stopAllAnimations(
+    animationGroup: Record<string, BABYLON.AnimationGroup>,
+  ): void {
+    Object.values(animationGroup).forEach((ag) => {
       try {
         ag.stop()
       } catch {}
@@ -511,16 +460,22 @@ export class EagerWing___Character {
     }
   }
 
-  private playAnimation(name: string, duration = 300) {
-    const next = this.animations[name]
+  public playAnimation(
+    animationGroup: Record<string, BABYLON.AnimationGroup>,
+    name: string,
+    duration = 300,
+  ) {
+    const next = animationGroup[name]
     if (!next) return
 
     if (this.currentAnimName === name && this.currentAnimation === next) return
 
-    const idleName = `UnArmed-Idle_${this.characterAttribute.modelId}`
+    const idleName = this.combatMode
+      ? `Armed-Idle_instance_${this.characterAttribute.modelId}`
+      : `UnArmed-Idle_instance_${this.characterAttribute.modelId}`
 
     if (name === idleName) {
-      this.stopAllAnimations()
+      this.stopAllAnimations(animationGroup)
       try {
         next.stop()
       } catch {}
@@ -655,6 +610,12 @@ export class EagerWing___Character {
    * @returns { void }
    */
   public destroy(): void {
+    this.instantiateEntries?.animationGroups.forEach((a) => a.dispose())
+    this.instantiateEntries?.rootNodes
+      ?.filter((node) => node instanceof BABYLON.Mesh)
+      .forEach((m) => m.dispose())
+    this.characterRoot?.dispose()
+
     if (!this.characterAssets) return
     if (this.characterAssets.animationGroups) {
       this.characterAssets.animationGroups.forEach((anim) => {

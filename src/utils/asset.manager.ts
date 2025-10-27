@@ -51,7 +51,7 @@ export class EagerWing___AssetManager {
           const task = assetsManager.addContainerTask(key, "", path, "")
           task.onSuccess = (task: BABYLON.ContainerAssetTask) => {
             const container = task.loadedContainer
-            container.meshes.forEach((mesh) => mesh.setEnabled(false))
+            // container.meshes.forEach((mesh) => mesh.setEnabled(false))
             this.cache.set(task.name, container)
           }
         }

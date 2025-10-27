@@ -33,19 +33,27 @@ export class EagerWing___LabControl {
   /** Shadow Generator. */
   private shadowGenerator: BABYLON.ShadowGenerator
 
+  /** Stat intance. */
   private stats: Stats
+
+  /** Raw character attribute. */
+  private characterAttribute: Map<
+    string,
+    { attribute: CharacterAttribute; object: string; allowMovement: boolean }
+  >
 
   /** Asset Manager Instance. */
   private assetManager: EagerWing___AssetManager
 
-  /** Asset Container Instance. */
-  private assetContainer: Map<string, BABYLON.AssetContainer> = new Map()
-
   /** All humanoid character instances */
-  private characterInstances: Map<string, EagerWing___Character> = new Map()
-
-  /** All humanoid root instances */
-  private characterRoots: Map<string, BABYLON.TransformNode> = new Map()
+  private characterInstances: Map<
+    string,
+    {
+      instance: EagerWing___Character
+      root: BABYLON.TransformNode
+      getAnimationGroup: Record<string, BABYLON.AnimationGroup>
+    }
+  > = new Map()
 
   /** Allowed key */
   private keyboardKey: KeyState = {
@@ -65,8 +73,13 @@ export class EagerWing___LabControl {
    */
   constructor(
     canvas: HTMLCanvasElement,
-    characterAttribute: CharacterAttribute,
+    assetsLibrary: Map<string, string>,
+    characterAttribute: Map<
+      string,
+      { attribute: CharacterAttribute; object: string; allowMovement: boolean }
+    >,
   ) {
+    this.characterAttribute = characterAttribute
     /** Configure the canvas */
     canvas.style.width = "100%"
     canvas.style.height = "100%"
@@ -119,7 +132,7 @@ export class EagerWing___LabControl {
 
     this.setupInteractions()
 
-    this.init(characterAttribute).then(() => {
+    this.init(assetsLibrary, characterAttribute).then(() => {
       this.animate()
     })
 
@@ -129,12 +142,24 @@ export class EagerWing___LabControl {
   }
 
   animate(): void {
-    this.stats.begin()
     this.engine.runRenderLoop(() => {
-      const main = this.characterInstances.get("mainPlayer")
-      if (main) {
-        main.update(this.keyboardKey, this.cameraActionManager.getCamera())
-      }
+      this.stats.begin()
+      this.characterInstances.forEach((value, key) => {
+        const allowMovement =
+          this.characterAttribute.get(key)?.allowMovement ?? false
+        if (allowMovement) {
+          const characterInstance = this.characterInstances.get(key)
+          if (characterInstance && characterInstance.root) {
+            characterInstance.instance.update(
+              characterInstance.root,
+              characterInstance.getAnimationGroup,
+              "001",
+              this.keyboardKey,
+              this.cameraActionManager.getCamera(),
+            )
+          }
+        }
+      })
 
       this.scene.render()
       this.stats.end()
@@ -151,7 +176,7 @@ export class EagerWing___LabControl {
       if (e.code === "Space") this.keyboardKey.space = true
 
       if (e.key === "x")
-        this.characterInstances.get("mainPlayer")?.toogleCombatMode()
+        this.characterInstances.get("mainPlayer")?.instance.toogleCombatMode()
     })
 
     window.addEventListener("keyup", (e) => {
@@ -202,7 +227,16 @@ export class EagerWing___LabControl {
    *
    * @returns { Promise<void> }
    */
-  async init(characterAttribute: CharacterAttribute): Promise<void> {
+  async init(
+    assetsLibrary: Map<string, string>,
+    attributeList: Map<
+      string,
+      {
+        object: string
+        attribute: CharacterAttribute
+      }
+    >,
+  ): Promise<void> {
     const ground = BABYLON.MeshBuilder.CreateGround(
       "ground",
       { width: 50, height: 50 },
@@ -211,36 +245,81 @@ export class EagerWing___LabControl {
 
     ground.receiveShadows = true
 
-    await this.assetManager.loadAll({
-      mainPlayer: "../characters/DUMMY.glb",
-    })
-    const characterAsset = this.assetManager.get("mainPlayer")
-    if (characterAsset) this.assetContainer?.set("mainPlayer", characterAsset)
+    await this.assetManager.loadAll(Object.fromEntries(assetsLibrary))
 
-    const mainCharacter = this.assetContainer?.get("mainPlayer")
+    attributeList.forEach(({ object, attribute }, key) => {
+      const characterAsset = this.assetManager.get(object)
 
-    if (mainCharacter) {
-      this.characterInstances?.set(
-        "mainPlayer",
-        new EagerWing___Character(
+      if (characterAsset) {
+        const characterInstance = new EagerWing___Character(
           this.engine,
           this.scene,
-          mainCharacter,
-          characterAttribute,
-        ),
-      )
+          characterAsset,
+          attribute,
+        )
 
-      const mainCharacterInstance = this.characterInstances?.get("mainPlayer")
-      if (this.characterInstances) {
-        const mainCharacterRoot = mainCharacterInstance?.getRoot
-        if (mainCharacterRoot) {
-          mainCharacterRoot.getChildMeshes().forEach((mesh) => {
-            this.shadowGenerator.addShadowCaster(mesh)
-          })
+        const { root, getAnimationGroup } = characterInstance.createCharacter()
 
-          this.characterRoots?.set("mainPlayer", mainCharacterRoot)
-        }
+        this.characterInstances?.set(key, {
+          instance: characterInstance,
+          root,
+          getAnimationGroup,
+        })
       }
+    })
+
+    // attributeList.forEach(({ object, attribute }, key) => {
+    //   const characterAsset = this.assetManager.get(object)
+
+    //   if (characterAsset) {
+    //     const characterInstance = new EagerWing___Character(
+    //       this.engine,
+    //       this.scene,
+    //       characterAsset,
+    //       attribute,
+    //     ).createCharacter()
+
+    //     this.characterInstances?.set(key, characterInstance)
+
+    //     this.instantiateCharacter(
+    //       characterAsset,
+    //       this.scene,
+    //       new BABYLON.Vector3(
+    //         attribute.position.x,
+    //         attribute.position.y,
+    //         attribute.position.z,
+    //       ),
+    //     )
+    //   }
+    // })
+  }
+
+  instantiateCharacter(
+    container: BABYLON.AssetContainer,
+    scene: BABYLON.Scene,
+    position: BABYLON.Vector3,
+  ) {
+    // Create isolated instance with all animations & skeletons remapped
+    const { rootNodes, animationGroups } = container.instantiateModelsToScene(
+      (name) =>
+        name + "_instance_" + Math.random().toString(36).substring(2, 7),
+    )
+
+    // Create a root node for positioning
+    const root = new BABYLON.TransformNode("root_" + Math.random(), scene)
+    root.position.copyFrom(position)
+
+    // Parent the root nodes under our new root
+    for (const node of rootNodes) {
+      node.parent = root
     }
+
+    // Stop any auto-playing animations
+    for (const ag of animationGroups) {
+      ag.stop()
+      ag.reset()
+    }
+
+    return { root, animationGroups }
   }
 }
