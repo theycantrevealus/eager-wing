@@ -1,5 +1,5 @@
 /**
- * @fileoverview Character creation module.
+ * @fileoverview Character movement lab.
  * @module EagerWing___LabControl
  */
 
@@ -272,59 +272,5 @@ export class EagerWing___LabControl {
         })
       }
     })
-
-    // attributeList.forEach(({ object, attribute }, key) => {
-    //   const characterAsset = this.assetManager.get(object)
-
-    //   if (characterAsset) {
-    //     const characterInstance = new EagerWing___Character(
-    //       this.engine,
-    //       this.scene,
-    //       characterAsset,
-    //       attribute,
-    //     ).createCharacter()
-
-    //     this.characterInstances?.set(key, characterInstance)
-
-    //     this.instantiateCharacter(
-    //       characterAsset,
-    //       this.scene,
-    //       new BABYLON.Vector3(
-    //         attribute.position.x,
-    //         attribute.position.y,
-    //         attribute.position.z,
-    //       ),
-    //     )
-    //   }
-    // })
-  }
-
-  instantiateCharacter(
-    container: BABYLON.AssetContainer,
-    scene: BABYLON.Scene,
-    position: BABYLON.Vector3,
-  ) {
-    // Create isolated instance with all animations & skeletons remapped
-    const { rootNodes, animationGroups } = container.instantiateModelsToScene(
-      (name) =>
-        name + "_instance_" + Math.random().toString(36).substring(2, 7),
-    )
-
-    // Create a root node for positioning
-    const root = new BABYLON.TransformNode("root_" + Math.random(), scene)
-    root.position.copyFrom(position)
-
-    // Parent the root nodes under our new root
-    for (const node of rootNodes) {
-      node.parent = root
-    }
-
-    // Stop any auto-playing animations
-    for (const ag of animationGroups) {
-      ag.stop()
-      ag.reset()
-    }
-
-    return { root, animationGroups }
   }
 }

@@ -28,15 +28,6 @@ export class EagerWing___Character {
 
   private characterSharedAsset: BABYLON.AssetContainer
 
-  /** Entries of character instances */
-  private instantiateEntries: BABYLON.InstantiatedEntries | null = null
-
-  /** Shared asset from main scene. */
-  private characterAssets: BABYLON.AssetContainer | null = null
-
-  /** Character object after apply attribute. */
-  private characterRoot: BABYLON.TransformNode | null = null
-
   /** Registered humanoid bones formatted with humanly name */
   private bonesCollection: CharacterBoneCollection = {}
 
@@ -419,24 +410,6 @@ export class EagerWing___Character {
     }
   }
 
-  private getGroundHit(): BABYLON.PickingInfo | null {
-    if (!this.scene || !this.characterRoot) return null
-
-    const origin = this.characterRoot.position.clone()
-    origin.y += 0.5 // raise ray start slightly above feet
-
-    const direction = new BABYLON.Vector3(0, -1, 0)
-    const length = 2 // ray length; enough to detect ground below
-
-    const ray = new BABYLON.Ray(origin, direction, length)
-    const pick = this.scene.pickWithRay(ray, (mesh) => {
-      // Only pick actual ground meshes
-      return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
-    })
-
-    return pick ?? null
-  }
-
   private stopAllAnimations(
     animationGroup: Record<string, BABYLON.AnimationGroup>,
   ): void {
@@ -591,18 +564,6 @@ export class EagerWing___Character {
     })
   }
 
-  get getRoot(): BABYLON.TransformNode | null {
-    return this.characterRoot
-  }
-
-  get getRegisteredBones() {
-    return this.controlPanelBones
-  }
-
-  get getBoneCollection() {
-    return this.bonesCollection
-  }
-
   /**
    * @public
    * Destroy character meshes
@@ -610,53 +571,7 @@ export class EagerWing___Character {
    * @returns { void }
    */
   public destroy(): void {
-    this.instantiateEntries?.animationGroups.forEach((a) => a.dispose())
-    this.instantiateEntries?.rootNodes
-      ?.filter((node) => node instanceof BABYLON.Mesh)
-      .forEach((m) => m.dispose())
-    this.characterRoot?.dispose()
-
-    if (!this.characterAssets) return
-    if (this.characterAssets.animationGroups) {
-      this.characterAssets.animationGroups.forEach((anim) => {
-        anim.stop()
-        anim.dispose()
-      })
-    }
-
-    if (this.characterAssets.meshes) {
-      this.characterAssets.meshes.forEach((mesh) => {
-        mesh.dispose(false, true)
-      })
-    }
-
-    if (this.characterAssets.skeletons) {
-      this.characterAssets.skeletons.forEach((skeleton) => {
-        skeleton.dispose()
-      })
-    }
-
-    if (this.characterAssets.materials) {
-      this.characterAssets.materials.forEach((mat) => mat.dispose())
-    }
-
-    if (this.characterAssets.textures) {
-      this.characterAssets.textures.forEach((tex) => tex.dispose())
-    }
-
-    if (this.labelPlane && !this.labelPlane.isDisposed()) {
-      this.labelPlane.dispose()
-    }
-
-    if (this.characterRoot && !this.characterRoot.isDisposed()) {
-      this.characterRoot.dispose(false, true)
-    }
-
-    if (this.labelUpdateObserver) {
-      this.scene.onBeforeRenderObservable.remove(this.labelUpdateObserver)
-    }
-
-    this.characterAssets = null as any
+    //
     this.isLoaded = false
   }
 

@@ -1,0 +1,63 @@
+.overlay {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Panel styles */
+.panel {
+  position: absolute;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  pointer-events: auto;
+  user-select: none;
+  transition: box-shadow 0.15s ease;
+}
+.panel:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+.panel-header {
+  background: #444;
+  color: white;
+  padding: 6px 10px;
+  font-weight: bold;
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-header:active {
+  cursor: grabbing;
+}
+
+.panel-content {
+  padding: 10px;
+  font-size: 13px;
+}
+
+/* Resize handle at bottom-right */
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  cursor: nwse-resize;
+}
+
+/* Minimize button */
+.min-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+.min-btn:hover {
+  color: #ffd966;
+}

@@ -44,7 +44,7 @@ export class EagerWing___CameraAction {
     }
 
     /** Minimum zoom. */
-    this.camera.lowerRadiusLimit = 10
+    this.camera.lowerRadiusLimit = 20
 
     /** Maximum zoom. */
     this.camera.upperRadiusLimit = 100

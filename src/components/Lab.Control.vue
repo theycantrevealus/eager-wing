@@ -1,19 +1,58 @@
 <template>
   <div>
     <canvas ref="canvasEl" class="w-full h-full"></canvas>
+    <!-- UI Overlay -->
+    <div class="overlay">
+      <div
+        v-for="(panel, index) in panels"
+        :key="panel.id"
+        class="panel"
+        :style="{
+          transform: `translate(${panel.x}px, ${panel.y}px)`,
+          width: panel.width + 'px',
+          height: panel.height + 'px',
+          zIndex: panel.z,
+        }"
+        @pointerdown="focusPanel(index, $event)"
+      >
+        <!-- Panel Header -->
+        <header
+          class="panel-header"
+          @pointerdown.stop="startDrag(index, $event)"
+        >
+          {{ panel.title }}
+          <button class="min-btn" @click.stop="toggleMinimize(index)">
+            {{ panel.minimized ? "🗖" : "🗕" }}
+          </button>
+        </header>
+
+        <!-- Panel Content -->
+        <div v-show="!panel.minimized" class="panel-content">
+          <p>Panel #{{ index + 1 }}</p>
+          <p>You can drag or resize me.</p>
+        </div>
+
+        <!-- Resize handle -->
+        <div
+          class="resize-handle"
+          @pointerdown.stop="startResize(index, $event)"
+        ></div>
+      </div>
+    </div>
   </div>
 </template>
 <script lang="ts">
 import { EagerWing___LabControl } from "__&GL/render/lab.control"
 import type { CharacterAttribute } from "__&types/Character"
+// import Log from "__&vite/components/panel/Utils/Log.vue"
 import { defineComponent } from "vue"
 
 export default defineComponent({
   name: "LabControl",
+  // components: { Log },
   data() {
     return {
       processor: null as EagerWing___LabControl | null,
-
       characterInitAttribute: new Map([
         [
           "mainPlayer",
@@ -129,6 +168,38 @@ export default defineComponent({
           allowMovement: boolean
         }
       >,
+
+      // Panel Manager
+      panels: [],
+      panelLib: [
+        {
+          id: 1,
+          title: "Inventory",
+          x: 60,
+          y: 60,
+          width: 240,
+          height: 160,
+          z: 1,
+          minimized: false,
+        },
+        {
+          id: 2,
+          title: "Stats",
+          x: 340,
+          y: 100,
+          width: 240,
+          height: 160,
+          z: 2,
+          minimized: false,
+        },
+      ],
+      dragging: false,
+      resizing: false,
+      activeIndex: null,
+      offsetX: 0,
+      offsetY: 0,
+      startWidth: 0,
+      startHeight: 0,
     }
   },
   mounted() {
@@ -144,6 +215,66 @@ export default defineComponent({
   beforeUnmount() {
     this.processor?.destroy()
     this.processor = null
+  },
+  methods: {
+    focusPanel(index, e) {
+      const maxZ = Math.max(...this.panels.map((p) => p.z))
+      this.panels[index].z = maxZ + 1
+    },
+
+    /* Start dragging */
+    startDrag(index, e) {
+      const panel = this.panels[index]
+      this.dragging = true
+      this.activeIndex = index
+      const rect = e.currentTarget.parentElement.getBoundingClientRect()
+      this.offsetX = e.clientX - rect.left
+      this.offsetY = e.clientY - rect.top
+      document.addEventListener("pointermove", this.onPointerMove)
+      document.addEventListener("pointerup", this.onPointerUp)
+      e.preventDefault()
+    },
+
+    /* Start resizing */
+    startResize(index, e) {
+      const panel = this.panels[index]
+      this.resizing = true
+      this.activeIndex = index
+      this.startWidth = panel.width
+      this.startHeight = panel.height
+      this.offsetX = e.clientX
+      this.offsetY = e.clientY
+      document.addEventListener("pointermove", this.onPointerMove)
+      document.addEventListener("pointerup", this.onPointerUp)
+      e.preventDefault()
+    },
+
+    onPointerMove(e) {
+      if (this.dragging && this.activeIndex !== null) {
+        const panel = this.panels[this.activeIndex]
+        panel.x = e.clientX - this.offsetX
+        panel.y = e.clientY - this.offsetY
+      } else if (this.resizing && this.activeIndex !== null) {
+        const panel = this.panels[this.activeIndex]
+        const dx = e.clientX - this.offsetX
+        const dy = e.clientY - this.offsetY
+        panel.width = Math.max(160, this.startWidth + dx)
+        panel.height = Math.max(100, this.startHeight + dy)
+      }
+    },
+
+    onPointerUp() {
+      this.dragging = false
+      this.resizing = false
+      this.activeIndex = null
+      document.removeEventListener("pointermove", this.onPointerMove)
+      document.removeEventListener("pointerup", this.onPointerUp)
+    },
+
+    toggleMinimize(index) {
+      // this.panels[index].minimized = !this.panels[index].minimized
+      this.panels.splice(index, 1)
+    },
   },
 })
 </script>
