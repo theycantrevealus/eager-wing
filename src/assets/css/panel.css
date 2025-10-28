@@ -14,7 +14,7 @@
   pointer-events: auto;
   user-select: none;
   transition: box-shadow 0.15s ease;
-  background-color: rgba(0, 0, 0, 0.55);
+  background-color: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   will-change: transform, width, height;
@@ -40,8 +40,7 @@
 }
 
 .panel-content {
-  padding: 10px;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 /* Resize handle at bottom-right */
@@ -93,4 +92,71 @@
   height: 43px;
   background: #211f1a;
   border-radius: 5px;
+}
+
+/* CUSTOM FOR PRIMEVUE */
+.p-tablist {
+  background: transparent !important;
+}
+
+.p-tab {
+  font-size: 8pt !important;
+  color: #b4ad8f !important;
+  padding: 5px !important;
+  border: transparent !important;
+}
+
+.p-tab-active {
+  color: #fff !important;
+  border-radius: 5px 5px 0 0 !important;
+  border-bottom: solid 1px transparent !important;
+  border-top: solid 1px #b4ad8f !important;
+  border-left: solid 1px #b4ad8f !important;
+  border-right: solid 1px #b4ad8f !important;
+}
+
+.p-tab.p-tab-active {
+  border-bottom: solid 1px transparent !important;
+}
+
+.p-tablist-tab-list {
+  border-color: #b4ad8f !important;
+}
+
+.p-tabpanels {
+  padding: 0 10px !important;
+  color: #fff !important;
+  background: transparent !important;
+}
+
+.chat-p {
+  margin: 0 !important;
+}
+
+.chat-p.system {
+  color: #21a3ff !important;
+}
+
+.chat-p.from-enemy {
+  color: #e60000 !important;
+}
+
+.chat-p.from-allied {
+  color: #00c22d !important;
+}
+
+.chat-p.whisper {
+  color: #d64fff !important;
+}
+
+.chat-p.guild {
+  color: #f2e200 !important;
+}
+
+.chat-p.party {
+  color: #f59400 !important;
+}
+
+.chat-p:hover {
+  text-shadow: 0px 0px 10px #fff;
 }

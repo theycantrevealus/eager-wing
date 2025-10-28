@@ -9,15 +9,17 @@
       </TabList>
       <TabPanels>
         <TabPanel value="0">
-          <p class="m-0">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat. Duis aute irure dolor in
-            reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-            pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-            culpa qui officia deserunt mollit anim id est laborum.
+          <p class="m-0 chat-p system">Renabella has defeated Johnz</p>
+          <p class="m-0 chat-p system">You have defeated Goblin Warrior</p>
+          <p class="m-0 chat-p from-enemy">
+            R4daHn inflicted 412 damage to you
           </p>
+          <p class="m-0 chat-p from-allied">
+            +HP 120 from [Eternity Faith lv.2]
+          </p>
+          <p class="m-0 chat-p whisper">Renabella: Parah bro</p>
+          <p class="m-0 chat-p guild">Renabella: Bagi potion L gaes</p>
+          <p class="m-0 chat-p party">Levi4than007: Izin off dulu</p>
         </TabPanel>
         <TabPanel value="1">
           <p class="m-0">
@@ -71,6 +73,13 @@ export default defineComponent({
     parameter: {
       type: Object,
       default: () => ({ tabIndex: "0" }),
+    },
+    chat: {
+      type: Array<{
+        type: string
+        message: string
+      }>,
+      default: () => [],
     },
   },
   emits: ["update-parameter"],

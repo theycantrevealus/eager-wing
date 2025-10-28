@@ -83,11 +83,11 @@ export default defineComponent({
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    // this.processor = new EagerWing___LabControl(
-    //   canvas,
-    //   new Map([["character", "../characters/DUMMY.glb"]]),
-    //   this.characterInitAttribute,
-    // )
+    this.processor = new EagerWing___LabControl(
+      canvas,
+      new Map([["character", "../characters/DUMMY.glb"]]),
+      this.characterInitAttribute,
+    )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -129,7 +129,6 @@ export default defineComponent({
     /* Start dragging */
     startDrag(index: number, e: any) {
       if (e.target.closest(".panel-content")) return
-      // const panel = this.panels[index]
       this.dragging = true
       this.activeIndex = index
       const rect = e.currentTarget.parentElement.getBoundingClientRect()
@@ -155,24 +154,6 @@ export default defineComponent({
       }
       e.preventDefault()
     },
-
-    // onPointerMove(e: MouseEvent) {
-    //   if (this.dragging && this.activeIndex !== null) {
-    //     const panel = this.panels[this.activeIndex]
-    //     if (panel) {
-    //       panel.x = e.clientX - this.offsetX
-    //       panel.y = e.clientY - this.offsetY
-    //     }
-    //   } else if (this.resizing && this.activeIndex !== null) {
-    //     const panel = this.panels[this.activeIndex]
-    //     if (panel) {
-    //       const dx = e.clientX - this.offsetX
-    //       const dy = e.clientY - this.offsetY
-    //       panel.width = Math.max(160, this.startWidth + dx)
-    //       panel.height = Math.max(100, this.startHeight + dy)
-    //     }
-    //   }
-    // },
 
     onPointerMove(e: MouseEvent) {
       if (this.dragging && this.activeIndex !== null) {
