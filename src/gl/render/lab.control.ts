@@ -144,6 +144,7 @@ export class EagerWing___LabControl {
   animate(): void {
     this.engine.runRenderLoop(() => {
       this.stats.begin()
+      // @ts-ignore
       this.characterInstances.forEach((value, key) => {
         const allowMovement =
           this.characterAttribute.get(key)?.allowMovement ?? false
@@ -206,13 +207,19 @@ export class EagerWing___LabControl {
   }
 
   destroy(): void {
+    if (import.meta.hot) {
+      import.meta.hot.dispose(() => {
+        this.scene.dispose()
+        this.engine.dispose()
+      })
+    }
+
     window.removeEventListener("resize", () => this.handleResize())
+    window.removeEventListener("keyup", () => {})
+    window.removeEventListener("keydown", () => {})
+    window.removeEventListener("blur", () => {})
 
     if (this.cameraActionManager) this.cameraActionManager.destroy()
-
-    this.scene.dispose()
-
-    this.engine.dispose()
 
     if (this.stats.dom.parentNode) {
       this.stats.dom.parentNode.removeChild(this.stats.dom)
@@ -242,13 +249,13 @@ export class EagerWing___LabControl {
       }
     >,
   ): Promise<void> {
-    const ground = BABYLON.MeshBuilder.CreateGround(
+    BABYLON.MeshBuilder.CreateGround(
       "ground",
       { width: 50, height: 50 },
       this.scene,
     )
 
-    ground.receiveShadows = true
+    // ground.receiveShadows = true
 
     await this.assetManager.loadAll(Object.fromEntries(assetsLibrary))
 
@@ -264,6 +271,8 @@ export class EagerWing___LabControl {
         )
 
         const { root, getAnimationGroup } = characterInstance.createCharacter()
+
+        // const chunkManager = new EagerWing___Map(this.scene, root)
 
         this.characterInstances?.set(key, {
           instance: characterInstance,
