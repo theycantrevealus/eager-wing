@@ -13,9 +13,9 @@
   <p align="center">
     ⭐ Star us on GitHub — it motivates us a lot! ❤️‍🔥 <br />
     ·
-    <a href="https://github.com/theycantrevealus/horas/issues">Report Bug</a>
+    <a href="https://github.com/theycantrevealus/eager-wing/issues">Report Bug</a>
     ·
-    <a href="https://github.com/theycantrevealus/horas/issues">Request Feature</a>
+    <a href="https://github.com/theycantrevealus/eager-wing/issues">Request Feature</a>
   </p>
 </div>
 
