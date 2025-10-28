@@ -10,3 +10,4 @@ src/assets/job/
 src/assets/wallpaper/
 src/assets/*.svg
 src/assets/logo*
+tools/venv/
