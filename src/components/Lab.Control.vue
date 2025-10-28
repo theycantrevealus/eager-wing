@@ -5,7 +5,7 @@
     <div class="overlay">
       <div
         v-for="(panel, index) in panels"
-        :key="index + 1"
+        :key="panel.id"
         class="panel"
         :style="{
           transform: `translate(${panel.x}px, ${panel.y}px)`,
@@ -13,29 +13,31 @@
           height: panel.height + 'px',
           zIndex: panel.z,
         }"
-        @pointerdown="focusPanel(index)"
       >
         <!-- Panel Header -->
         <header
           class="panel-header"
-          @pointerdown.stop="startDrag(index, $event)"
+          @pointerdown.stop="onPanelHeaderPointerDown(index, $event)"
         >
           {{ panel.title }}
-          <button class="min-btn" @click.stop="toggleClose(index)">
-            {{ panel.minimized ? "🗖" : "⨉" }}
-          </button>
+          <button class="min-btn" @click.stop="toggleClose(index)">⨉</button>
         </header>
 
         <!-- Panel Content -->
-        <div v-show="!panel.minimized" class="panel-content">
+        <div class="panel-content">
           <component
+            v-memo="[panel.id, panel.parameter]"
             v-if="panel.component"
             :is="asyncPanel(panel.component)"
+            :debug="true"
+            @update-parameter="updatePanelParameter(index, $event)"
+            :parameter="panel.parameter"
           ></component>
         </div>
 
         <!-- Resize handle -->
         <div
+          v-if="panel.resizable"
           class="resize-handle"
           @pointerdown.stop="startResize(index, $event)"
         ></div>
@@ -58,8 +60,10 @@ export default defineComponent({
       processor: null as EagerWing___LabControl | null,
       characterInitAttribute: LAB_CHARACTER,
 
+      asyncCache: new Map(),
+
       /** Panel Management */
-      panels: [] as Panel[],
+      panels: [PANEL[1]] as Panel[],
       dragging: false,
       resizing: false,
       activeIndex: null as number | null,
@@ -79,11 +83,11 @@ export default defineComponent({
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    this.processor = new EagerWing___LabControl(
-      canvas,
-      new Map([["character", "../characters/DUMMY.glb"]]),
-      this.characterInitAttribute,
-    )
+    // this.processor = new EagerWing___LabControl(
+    //   canvas,
+    //   new Map([["character", "../characters/DUMMY.glb"]]),
+    //   this.characterInitAttribute,
+    // )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -101,9 +105,15 @@ export default defineComponent({
   },
   methods: {
     asyncPanel(target: string) {
-      return defineAsyncComponent(
-        () => import(`__&vite/components/panel/Utils/${target}.vue`),
-      )
+      if (!this.asyncCache.has(target)) {
+        this.asyncCache.set(
+          target,
+          defineAsyncComponent(
+            () => import(`__&vite/components/panel/Utils/${target}.vue`),
+          ),
+        )
+      }
+      return this.asyncCache.get(target)
     },
     focusPanel(index: number) {
       if (this.panels[index]) {
@@ -111,9 +121,14 @@ export default defineComponent({
         this.panels[index].z = maxZ + 1
       }
     },
+    onPanelHeaderPointerDown(index: number, e: MouseEvent) {
+      this.focusPanel(index)
+      this.startDrag(index, e)
+    },
 
     /* Start dragging */
     startDrag(index: number, e: any) {
+      if (e.target.closest(".panel-content")) return
       // const panel = this.panels[index]
       this.dragging = true
       this.activeIndex = index
@@ -141,20 +156,42 @@ export default defineComponent({
       e.preventDefault()
     },
 
+    // onPointerMove(e: MouseEvent) {
+    //   if (this.dragging && this.activeIndex !== null) {
+    //     const panel = this.panels[this.activeIndex]
+    //     if (panel) {
+    //       panel.x = e.clientX - this.offsetX
+    //       panel.y = e.clientY - this.offsetY
+    //     }
+    //   } else if (this.resizing && this.activeIndex !== null) {
+    //     const panel = this.panels[this.activeIndex]
+    //     if (panel) {
+    //       const dx = e.clientX - this.offsetX
+    //       const dy = e.clientY - this.offsetY
+    //       panel.width = Math.max(160, this.startWidth + dx)
+    //       panel.height = Math.max(100, this.startHeight + dy)
+    //     }
+    //   }
+    // },
+
     onPointerMove(e: MouseEvent) {
       if (this.dragging && this.activeIndex !== null) {
         const panel = this.panels[this.activeIndex]
         if (panel) {
-          panel.x = e.clientX - this.offsetX
-          panel.y = e.clientY - this.offsetY
+          requestAnimationFrame(() => {
+            panel.x = e.clientX - this.offsetX
+            panel.y = e.clientY - this.offsetY
+          })
         }
       } else if (this.resizing && this.activeIndex !== null) {
         const panel = this.panels[this.activeIndex]
         if (panel) {
           const dx = e.clientX - this.offsetX
           const dy = e.clientY - this.offsetY
-          panel.width = Math.max(160, this.startWidth + dx)
-          panel.height = Math.max(100, this.startHeight + dy)
+          requestAnimationFrame(() => {
+            panel.width = Math.max(160, this.startWidth + dx)
+            panel.height = Math.max(100, this.startHeight + dy)
+          })
         }
       }
     },
@@ -168,7 +205,6 @@ export default defineComponent({
     },
 
     toggleClose(index: number) {
-      // this.panels[index].minimized = !this.panels[index].minimized
       this.panels.splice(index, 1)
     },
 
@@ -224,6 +260,13 @@ export default defineComponent({
       this.ctrlPressed = false
       this.altPressed = false
       this.shiftPressed = false
+    },
+    updatePanelParameter(index: number, newValue: object) {
+      alert()
+      if (this.panels[index]?.parameter) {
+        alert()
+        Object.assign(this.panels[index]?.parameter, newValue)
+      }
     },
   },
 })

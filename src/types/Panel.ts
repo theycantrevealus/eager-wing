@@ -1,11 +1,13 @@
 export type Panel = {
+  id: number
   identifier: string
   title: string
   component?: string
+  resizable: boolean
   x: number
   y: number
+  z: number
   width: number
   height: number
-  z: number
-  minimized: boolean
+  parameter?: Record<string, any>
 }

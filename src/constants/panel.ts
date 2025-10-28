@@ -2,25 +2,30 @@ import type { Panel } from "__&types/Panel"
 
 export const PANEL: Panel[] = [
   {
+    id: 1,
     identifier: "inventory",
     title: "Inventory",
     component: "Panel.Inventory",
-    x: 60,
+    resizable: false,
+    x: window.innerWidth - 540,
     y: 60,
+    z: 1,
     width: 540,
     height: 850,
-    z: 1,
-    minimized: false,
   },
   {
+    id: 2,
     identifier: "chat",
     title: "Chat",
     component: "Panel.Chat",
-    x: 340,
-    y: 100,
-    width: 240,
-    height: 160,
+    resizable: true,
+    x: 0,
+    y: window.innerHeight / 2 + 260 / 2,
     z: 2,
-    minimized: false,
+    width: 540,
+    height: 260,
+    parameter: {
+      tabIndex: "0",
+    },
   },
 ]
