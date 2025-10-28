@@ -63,7 +63,7 @@ export class EagerWing___Character {
   private groundTolerance: number = 0.5
   private gravityForce: number = 10
   private isJumping: boolean = false
-  private jumpPower: number = 6
+  private jumpPower: number = 5
   private verticalVelocity: number = 0
   private sideSpeed: number = 0.05
   private runSpeed: number = 0.3
@@ -267,36 +267,45 @@ export class EagerWing___Character {
     ).normalize()
 
     /** ---------------------------------------------------------------------- movement */
+    let useSpeed = this.characterAttribute.speed
     if (w) {
       moveDir.addInPlace(camForward)
       nextAnimName = this.combatMode
         ? `Armed-RunForward_instance_${modelID}`
         : `Unarmed-RunForward_instance_${modelID}`
+      useSpeed = this.combatMode ? this.runSpeed : this.characterAttribute.speed
     }
     if (s) {
       moveDir.subtractInPlace(camForward)
       nextAnimName = this.combatMode
         ? `Armed-WalkBack_instance_${modelID}`
         : `Unarmed-Backward_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
     if (a) {
       moveDir.subtractInPlace(camRight)
       nextAnimName = this.combatMode
         ? `Armed-WalkLeft_instance_${modelID}`
         : `Unarmed-StrafeLeft_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
     if (d) {
       moveDir.addInPlace(camRight)
       nextAnimName = this.combatMode
         ? `Armed-WalkRight_instance_${modelID}`
         : `Unarmed-StrafeRight_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
 
     if (moving) {
       moveDir.normalize()
-      rootInstance.position.addInPlace(
-        moveDir.scale(this.characterAttribute.speed),
-      )
+      rootInstance.position.addInPlace(moveDir.scale(useSpeed))
 
       const camFacing = Math.atan2(camForward.x, camForward.z)
       rootInstance.rotation.y = BABYLON.Scalar.Lerp(

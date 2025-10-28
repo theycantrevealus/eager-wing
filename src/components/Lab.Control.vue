@@ -92,11 +92,11 @@ export default defineComponent({
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    // this.processor = new EagerWing___LabControl(
-    //   canvas,
-    //   new Map([["character", "../characters/DUMMY.glb"]]),
-    //   this.characterInitAttribute,
-    // )
+    this.processor = new EagerWing___LabControl(
+      canvas,
+      new Map([["character", "../characters/DUMMY.glb"]]),
+      this.characterInitAttribute,
+    )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
