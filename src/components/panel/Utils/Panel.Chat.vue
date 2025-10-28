@@ -6,55 +6,83 @@
         <Tab value="1">Combat</Tab>
         <Tab value="2">Normal</Tab>
         <Tab value="3">Group</Tab>
+        <Tab value="4">Debug</Tab>
       </TabList>
+
       <TabPanels>
         <TabPanel value="0">
-          <p class="m-0 chat-p system">Renabella has defeated Johnz</p>
-          <p class="m-0 chat-p system">You have defeated Goblin Warrior</p>
-          <p class="m-0 chat-p from-enemy">
-            R4daHn inflicted 412 damage to you
-          </p>
-          <p class="m-0 chat-p from-allied">
-            +HP 120 from [Eternity Faith lv.2]
-          </p>
-          <p class="m-0 chat-p whisper">Renabella: Parah bro</p>
-          <p class="m-0 chat-p guild">Renabella: Bagi potion L gaes</p>
-          <p class="m-0 chat-p party">Levi4than007: Izin off dulu</p>
+          <!-- unique ref for each tab -->
+          <div ref="chatContainerAll" class="chat-box">
+            <p
+              v-for="(a, i) in messages"
+              :key="`all-${i}`"
+              :class="`m-0 chat-p ${a.type}`"
+            >
+              {{ a.content }}
+            </p>
+          </div>
         </TabPanel>
+
         <TabPanel value="1">
-          <p class="m-0">
-            Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-            accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
-            quae ab illo inventore veritatis et quasi architecto beatae vitae
-            dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit
-            aspernatur aut odit aut fugit, sed quia consequuntur magni dolores
-            eos qui ratione voluptatem sequi nesciunt. Consectetur, adipisci
-            velit, sed quia non numquam eius modi.
-          </p>
+          <div ref="chatContainerCombat" class="chat-box">
+            <p
+              v-for="(a, i) in messages.filter((m) => m.type === 'combat')"
+              :key="`combat-${i}`"
+              :class="`m-0 chat-p ${a.type}`"
+            >
+              {{ a.content }}
+            </p>
+          </div>
         </TabPanel>
+
         <TabPanel value="2">
-          <p class="m-0">
-            At vero eos et accusamus et iusto odio dignissimos ducimus qui
-            blanditiis praesentium voluptatum deleniti atque corrupti quos
-            dolores et quas molestias excepturi sint occaecati cupiditate non
-            provident, similique sunt in culpa qui officia deserunt mollitia
-            animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis
-            est et expedita distinctio. Nam libero tempore, cum soluta nobis est
-            eligendi optio cumque nihil impedit quo minus.
-          </p>
+          <div ref="chatContainerWhisper" class="chat-box">
+            <p
+              v-for="(a, i) in messages.filter((m) => m.type === 'whisper')"
+              :key="`whisper-${i}`"
+              :class="`m-0 chat-p ${a.type}`"
+            >
+              {{ a.content }}
+            </p>
+          </div>
+        </TabPanel>
+
+        <TabPanel value="3">
+          <div ref="chatContainerGuild" class="chat-box">
+            <p
+              v-for="(a, i) in messages.filter((m) => m.type === 'guild')"
+              :key="`guild-${i}`"
+              :class="`m-0 chat-p ${a.type}`"
+            >
+              {{ a.content }}
+            </p>
+          </div>
+        </TabPanel>
+
+        <TabPanel value="4">
+          <div ref="chatContainerDebug" class="chat-box">
+            <p
+              v-for="(a, i) in messages.filter((m) => m.type === 'debug')"
+              :key="`debug-${i}`"
+              :class="`m-0 chat-p ${a.type}`"
+            >
+              {{ a.content }}
+            </p>
+          </div>
         </TabPanel>
       </TabPanels>
     </Tabs>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from "vue"
 
+<script lang="ts">
+import { defineComponent, markRaw } from "vue"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
 import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
+import { useChatStore } from "../../../stores/utils/chat"
 
 export default defineComponent({
   name: "PanelChat",
@@ -65,25 +93,36 @@ export default defineComponent({
     TabPanels,
     TabPanel,
   },
+  data() {
+    return { chatStore: markRaw(useChatStore()) }
+  },
   props: {
-    debug: {
-      type: Boolean,
-      default: false,
+    debug: { type: Boolean, default: false },
+    parameter: { type: Object, default: () => ({ tabIndex: "0" }) },
+  },
+  computed: {
+    // ...mapStores(useChatStore),
+    messages() {
+      return this.chatStore.messages
     },
-    parameter: {
-      type: Object,
-      default: () => ({ tabIndex: "0" }),
-    },
-    chat: {
-      type: Array<{
-        type: string
-        message: string
-      }>,
-      default: () => [],
+    activeTab() {
+      return String(this.parameter.tabIndex ?? this.parameter.activeTab ?? "0")
     },
   },
-  emits: ["update-parameter"],
   watch: {
+    messages: {
+      deep: true,
+      handler() {
+        this.$nextTick(() => {
+          if (!this.tryScrollActiveContainer()) {
+            setTimeout(() => {
+              this.tryScrollActiveContainer()
+            }, 50)
+          }
+        })
+      },
+    },
+
     "parameter.activeTab"(newIndex) {
       this.$emit("update-parameter", {
         ...this.parameter,
@@ -91,5 +130,49 @@ export default defineComponent({
       })
     },
   },
+  methods: {
+    tryScrollActiveContainer(): boolean {
+      const active = String(this.activeTab)
+      const mapRef: Record<string, string> = {
+        "0": "chatContainerAll",
+        "1": "chatContainerCombat",
+        "2": "chatContainerWhisper",
+        "3": "chatContainerGuild",
+        "4": "chatContainerDebug",
+      }
+      const refName = mapRef[active]
+      if (!refName) return false
+
+      const candidate = (this.$refs as any)[refName]
+
+      let el: HTMLElement | null = null
+      if (Array.isArray(candidate)) {
+        el = candidate.find((x: any) => x && x.scrollTop !== undefined) ?? null
+      } else if (
+        candidate &&
+        (candidate as HTMLElement).scrollTop !== undefined
+      ) {
+        el = candidate as HTMLElement
+      }
+
+      if (!el) return false
+
+      try {
+        el.scrollTop = el.scrollHeight
+        return true
+      } catch (err) {
+        el.scrollTop = el.scrollHeight
+        return true
+      }
+    },
+  },
 })
 </script>
+
+<style>
+.chat-box {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 8px;
+}
+</style>

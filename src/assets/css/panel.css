@@ -40,6 +40,7 @@
 }
 
 .panel-content {
+  height: 300px;
   font-size: 10px;
 }
 
@@ -127,9 +128,11 @@
   padding: 0 10px !important;
   color: #fff !important;
   background: transparent !important;
+  height: 100px;
 }
 
 .chat-p {
+  color: #b4ad8f !important;
   margin: 0 !important;
 }
 

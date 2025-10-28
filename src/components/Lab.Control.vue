@@ -51,12 +51,14 @@ import { KEYBOARD_MAP } from "__&constants/map.keyboard"
 import { PANEL } from "__&constants/panel"
 import { EagerWing___LabControl } from "__&GL/render/lab.control"
 import type { Panel } from "__&types/Panel"
-import { defineAsyncComponent, defineComponent } from "vue"
+import { defineAsyncComponent, defineComponent, markRaw } from "vue"
+import { useChatStore } from "../stores/utils/chat"
 
 export default defineComponent({
   name: "LabControl",
   data() {
     return {
+      chatStore: markRaw(useChatStore()),
       processor: null as EagerWing___LabControl | null,
       characterInitAttribute: LAB_CHARACTER,
 
@@ -79,15 +81,22 @@ export default defineComponent({
       command: "",
     }
   },
+  // computed: {
+  //   ...mapStores(useChatStore),
+  // },
   mounted() {
+    this.chatStore.addMessage({
+      type: "debug",
+      content: "Welcome to Lab Control!",
+    })
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    this.processor = new EagerWing___LabControl(
-      canvas,
-      new Map([["character", "../characters/DUMMY.glb"]]),
-      this.characterInitAttribute,
-    )
+    // this.processor = new EagerWing___LabControl(
+    //   canvas,
+    //   new Map([["character", "../characters/DUMMY.glb"]]),
+    //   this.characterInitAttribute,
+    // )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -106,12 +115,11 @@ export default defineComponent({
   methods: {
     asyncPanel(target: string) {
       if (!this.asyncCache.has(target)) {
-        this.asyncCache.set(
-          target,
-          defineAsyncComponent(
-            () => import(`__&vite/components/panel/Utils/${target}.vue`),
-          ),
+        const rawAsyncComponent = defineAsyncComponent(
+          () => import(`__&vite/components/panel/Utils/${target}.vue`),
         )
+        // 👇 mark it raw before storing inside reactive Map
+        this.asyncCache.set(target, markRaw(rawAsyncComponent))
       }
       return this.asyncCache.get(target)
     },
@@ -134,6 +142,10 @@ export default defineComponent({
       const rect = e.currentTarget.parentElement.getBoundingClientRect()
       this.offsetX = e.clientX - rect.left
       this.offsetY = e.clientY - rect.top
+      this.chatStore.addMessage({
+        type: "debug",
+        content: `Moving panel index ${index} to (${this.offsetX}, ${this.offsetY})`,
+      })
       document.addEventListener("pointermove", this.onPointerMove)
       document.addEventListener("pointerup", this.onPointerUp)
       e.preventDefault()
