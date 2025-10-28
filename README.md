@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" width="380" />
+  <img src="logo.png" width="280" />
   
   [![License](https://img.shields.io/github/license/theycantrevealus/eager-wing?style=flat-square)](LICENSE)
   [![Build](https://img.shields.io/github/actions/workflow/status/theycantrevealus/eager-wing/ci.yml?style=flat-square)](https://github.com/theycantrevealus/eager-wing/actions)
