@@ -73,7 +73,7 @@ export class EagerWing___CharacterCreation {
   constructor(
     canvas: HTMLCanvasElement,
     characterAttribute: CharacterAttribute,
-    store: CharacterCreationStore, // TODO : What is the type lol
+    store: CharacterCreationStore,
   ) {
     this.store = store
     canvas.style.width = "100%"

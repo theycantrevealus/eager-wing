@@ -2,6 +2,7 @@
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
     /* Custom */
+    "skipLibCheck": true,
     "moduleResolution": "bundler",
     "module": "esnext",
     "verbatimModuleSyntax": true,
@@ -16,7 +17,8 @@
     },
 
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "types": ["vite/client"],
+    // "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types"],
 
     /* Linting */
     "strict": true,
@@ -26,6 +28,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "dist"],
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }
