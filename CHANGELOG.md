@@ -1,3 +1,11 @@
+## [1.3.2](https://github.com/theycantrevealus/eager-wing/compare/v1.3.1...v1.3.2) (2025-10-28)
+
+
+### Bug Fixes
+
+* animation between idle set smooth ([04acb9d](https://github.com/theycantrevealus/eager-wing/commit/04acb9d54798113649c14b76a1bdd233485881da))
+* instantiate character object for GPU buffer share ([ae9e596](https://github.com/theycantrevealus/eager-wing/commit/ae9e596aa5f45e628834f67a86cdf4368b497307))
+
 ## [1.3.1](https://github.com/theycantrevealus/eager-wing/compare/v1.3.0...v1.3.1) (2025-10-22)
 
 
