@@ -1,192 +1,159 @@
-# ------------------------------------------------------------
-# GLB CHUNK AND EXPORT
-# Script to split a large mesh into smaller chunks and export them as individual GLB files.
-# Run on blender
-# ------------------------------------------------------------
 import bpy
-import bmesh
 import os
-from mathutils import Vector
+import json
+import math
 
-print("\n=== CHUNK EXPORTER – FINAL VERSION ===")
+mesh_name = "Terrain"
+chunks_x = 10
+chunks_z = 10
+export_folder = "chunks_lod"
+EPS = 0.0001
+lod_levels = [1.0, 0.75, 0.5]
+use_draco = True
 
-# ------------------- USER SETTINGS ---------------------------
-chunks_x = 5
-chunks_y = 5
-chunk_size = 100.0
-export_folder = "chunks"
-draco_compression = True
-# ------------------------------------------------------------
-
-# ---- 1. Find mesh ------------------------------------------------
-obj = bpy.context.active_object
-if not obj or obj.type != 'MESH':
-    mesh_obj = next((o for o in bpy.data.objects if o.type == 'MESH'), None)
-    if not mesh_obj:
-        raise RuntimeError("No mesh found! Import your GLB.")
-    obj = mesh_obj
-print(f"Using mesh: {obj.name}")
-
-# ---- 2. Save blend file -----------------------------------------
-if not bpy.data.filepath:
-    raise RuntimeError("Save your .blend file first!")
+compression_settings = [
+    dict(pos=14, norm=10, tex=12),
+    dict(pos=12, norm=8, tex=10),
+    dict(pos=10, norm=6, tex=8),
+]
+manifest = []
 blend_dir = bpy.path.abspath("//")
 export_path = os.path.join(blend_dir, export_folder)
 os.makedirs(export_path, exist_ok=True)
-print(f"Export folder: {export_path}")
 
-# ---- 3. AUTO-SCALE MESH -----------------------------------------
-print("Scaling mesh...")
-bounds = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-min_x = min(v.x for v in bounds); max_x = max(v.x for v in bounds)
-min_z = min(v.z for v in bounds); max_z = max(v.z for v in bounds)
-width = max_x - min_x; depth = max_z - min_z
+obj = bpy.data.objects.get(mesh_name)
+if not obj or obj.type != 'MESH':
+    raise RuntimeError(f"Mesh '{mesh_name}' not found")
 
-target_width = chunks_x * chunk_size
-target_depth = chunks_y * chunk_size
+bpy.context.view_layer.objects.active = obj
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-scale = min(target_width / width if width > 0 else 1,
-            target_depth / depth if depth > 0 else 1)
+min_x = min(v.co.x for v in obj.data.vertices)
+max_x = max(v.co.x for v in obj.data.vertices)
+min_z = min(v.co.z for v in obj.data.vertices)
+max_z = max(v.co.z for v in obj.data.vertices)
 
-# Apply scale to vertices
-for v in obj.data.vertices:
-    v.co *= scale
+step_x = (max_x - min_x) / chunks_x
+step_z = (max_z - min_z) / chunks_z
 
-obj.location.x = -target_width / 2
-obj.location.z = -target_depth / 2
-print(f"Scaled to {target_width}x{target_depth}m")
+# SET CENTER
+offset_x = chunks_x // 2
+offset_z = chunks_z // 2
 
-# ---- 4. Duplicate mesh data -------------------------------------
-print("Duplicating mesh data...")
-mesh_copy = obj.data.copy()
-split_obj = bpy.data.objects.new(f"{obj.name}_split", mesh_copy)
-bpy.context.scene.collection.objects.link(split_obj)
+for ix in range(chunks_x):
+    for iz in range(chunks_z):
+        chunk_x = ix - offset_x
+        chunk_z = iz - offset_z
 
-# ---- 5. Create bmesh --------------------------------------------
-bm = bmesh.new()
-bm.from_mesh(mesh_copy)
+        bx_min = min_x + ix * step_x
+        bx_max = bx_min + step_x
+        bz_min = min_z + iz * step_z
+        bz_max = bz_min + step_z
+        
+        center_x = bx_min + (bx_max - bx_min) / 2
+        center_z = bz_min + (bz_max - bz_min) / 2
+        
+        center_gltf = [
+            center_x,     # X → X
+            -center_z,    # Z → -Z
+            0             # Y → Z = 0
+        ]
 
-# ---- 6. Bisect planes -------------------------------------------
-def bisect(axis, cuts):
-    if not bm.verts:
-        print(f"Skipping bisect {axis}: no vertices")
-        return
-    coords = [v.co.x if axis=='X' else v.co.z for v in bm.verts]
-    min_val, max_val = min(coords), max(coords)
-    step = (max_val - min_val) / cuts
-    for i in range(1, cuts):
-        pos = min_val + i * step
-        plane_co = Vector((pos, 0, 0)) if axis == 'X' else Vector((0, 0, pos))
-        plane_no = Vector((1, 0, 0)) if axis == 'X' else Vector((0, 0, 1))
-        bmesh.ops.bisect_plane(
-            bm,
-            geom=bm.verts[:] + bm.edges[:] + bm.faces[:],
-            plane_co=plane_co,
-            plane_no=plane_no,
-            clear_inner=False,
-            clear_outer=False
-        )
+        min_gltf = [
+            bx_min,       # X → X
+            -bz_max       # Z_max → -Z (because +Z becomes -Y)
+        ]
 
-bisect('X', chunks_x)
-bisect('Y', chunks_y)
-bm.to_mesh(mesh_copy)
-bm.free()
+        max_gltf = [
+            bx_max,       # X → X
+            -bz_min       # Z_min → -Z (because +Z becomes -Y)
+        ]
+        
+        manifest.append({
+            "x": chunk_x,
+            "z": chunk_z,
+            "gridOffset": [offset_x, offset_z],
+            "center": [center_gltf[0], center_gltf[1]],
+            "size": [step_x, step_z],
+            "min": min_gltf,
+            "max": max_gltf,
+            "lod0": f"chunk_{chunk_x}_{chunk_z}_lod0.gltf",
+            "lod1": f"chunk_{chunk_x}_{chunk_z}_lod1.gltf",
+            "lod2": f"chunk_{chunk_x}_{chunk_z}_lod2.gltf",
+        })
 
-# ---- 7. Separate into chunks ------------------------------------
-print("Separating chunks...")
-face_chunks = {}
-mesh = split_obj.data
-for f in mesh.polygons:
-    center = sum((mesh.vertices[v].co for v in f.vertices), Vector()) / len(f.vertices)
-    cx = int((center.x + target_width / 2) // chunk_size)
-    cz = int((center.z + target_depth / 2) // chunk_size)
-    key = (cx, cz)
-    face_chunks.setdefault(key, []).append(f.index)
+        # DUPLICATE + SLICE
+        chunk_obj = obj.copy()
+        chunk_obj.data = obj.data.copy()
+        bpy.context.collection.objects.link(chunk_obj)
+        chunk_obj.name = f"chunk_{chunk_x}_{chunk_z}_lod0"
 
-chunks = []
-for (cx, cz), face_indices in face_chunks.items():
-    bm_src = bmesh.new()
-    bm_src.from_mesh(mesh)
-    bm_src.faces.ensure_lookup_table()
+        bpy.context.view_layer.objects.active = chunk_obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-    faces_to_copy = []
-    for idx in face_indices:
-        if idx < len(bm_src.faces):
-            faces_to_copy.append(bm_src.faces[idx])
+        for v in chunk_obj.data.vertices:
+            if (bx_min - EPS) <= v.co.x <= (bx_max + EPS) and (bz_min - EPS) <= v.co.z <= (bz_max + EPS):
+                v.select = False
+            else:
+                v.select = True
 
-    if not faces_to_copy:
-        bm_src.free()
-        continue
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.delete(type='VERT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-    geom_copied = bmesh.ops.duplicate(bm_src, geom=faces_to_copy)["geom"]
+        # LODs
+        for level, factor in enumerate(lod_levels[1:], start=1):
+            lod_obj = chunk_obj.copy()
+            lod_obj.data = chunk_obj.data.copy()
+            lod_obj.name = f"chunk_{chunk_x}_{chunk_z}_lod{level}"
+            bpy.context.collection.objects.link(lod_obj)
 
-    bm_chunk = bmesh.new()
-    vert_map = {}
-    for elem in geom_copied:
-        if isinstance(elem, bmesh.types.BMVert):
-            new_v = bm_chunk.verts.new(elem.co)
-            vert_map[elem] = new_v
-        elif isinstance(elem, bmesh.types.BMEdge):
-            v1 = vert_map[elem.verts[0]]
-            v2 = vert_map[elem.verts[1]]
-            bm_chunk.edges.new((v1, v2))
-        elif isinstance(elem, bmesh.types.BMFace):
-            verts = [vert_map[v] for v in elem.verts]
-            bm_chunk.faces.new(verts)
+            dec = lod_obj.modifiers.new(name=f"Decimate_LOD{level}", type='DECIMATE')
+            dec.ratio = factor
+            bpy.context.view_layer.objects.active = lod_obj
+            bpy.ops.object.modifier_apply(modifier=dec.name)
 
-    bm_chunk.normal_update()
-    new_mesh = bpy.data.meshes.new(f"chunk_{cx}_{cz}_mesh")
-    bm_chunk.to_mesh(new_mesh)
-    bm_chunk.free()
-    bm_src.free()
+        # EXPORT
+        for level in range(len(lod_levels)):
+            lod_name = f"chunk_{chunk_x}_{chunk_z}_lod{level}.gltf"
+            lod_obj = bpy.data.objects.get(f"chunk_{chunk_x}_{chunk_z}_lod{level}")
+            bpy.ops.object.select_all(action='DESELECT')
+            lod_obj.select_set(True)
+            bpy.context.view_layer.objects.active = lod_obj
+            
+            lod_obj.rotation_euler = (math.radians(90), 0, 0)
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
-    new_obj = bpy.data.objects.new(f"chunk_{cx}_{cz}", new_mesh)
-    bpy.context.scene.collection.objects.link(new_obj)
-    new_obj.location = Vector((
-        (cx - chunks_x * 0.5 + 0.5) * chunk_size,
-        0,
-        (cz - chunks_y * 0.5 + 0.5) * chunk_size
-    ))
+            export_file = os.path.join(export_path, lod_name)
+            settings = compression_settings[level]
 
-    # TANAKA >> ADD "ground" TAG: This is for eager-wing purposes only. It used to identify ground meshes in game engine.
-    new_obj["ground"] = True
-    new_mesh["ground"] = True
+            bpy.ops.export_scene.gltf(
+                filepath=export_file,
+                export_format='GLTF_SEPARATE',
+                export_apply=True,
+                export_yup=True,
+                export_draco_mesh_compression_enable=True,
+                export_draco_position_quantization=settings['pos'],
+                export_draco_normal_quantization=settings['norm'],
+                export_draco_texcoord_quantization=settings['tex'],
+                use_selection=True
+            )
 
-    chunks.append(new_obj)
+            print(f"Exported: {lod_name}")
 
-print(f"Created {len(chunks)} chunks")
+        # CLEANUP
+        for level in range(len(lod_levels)):
+            lod_obj = bpy.data.objects.get(f"chunk_{chunk_x}_{chunk_z}_lod{level}")
+            if lod_obj:
+                bpy.data.objects.remove(lod_obj, do_unlink=True)
 
-# ---- 8. Export GLB files (Auto to chunks/) ----------------------
-print("Exporting chunks to GLB...")
-exported = 0
-for chunk in chunks:
-    glb_path = os.path.join(export_path, f"{chunk.name}.glb")
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        bpy.context.view_layer.update()
 
-    # Hide all objects, show only current chunk
-    for o in bpy.context.scene.objects:
-        o.hide_set(True)
-    chunk.hide_set(False)
-
-    bpy.ops.export_scene.gltf(
-        filepath=glb_path,
-        export_format='GLB',
-        export_apply=True,
-        export_draco_mesh_compression_enable=draco_compression,
-        export_materials='EXPORT',
-        export_yup=True
-    )
-
-    # Restore visibility
-    for o in bpy.context.scene.objects:
-        o.hide_set(False)
-
-
-# ---- 9. Cleanup -------------------------------------------------
-bpy.data.objects.remove(split_obj, do_unlink=True)
-for chunk in chunks:
-    bpy.data.objects.remove(chunk, do_unlink=True)
-    bpy.data.meshes.remove(chunk.data, do_unlink=True)
-
-print(f"\n=== SUCCESS: {exported}/{len(chunks)} chunks exported to '{export_folder}/' ===")
-print("   → Each chunk has: obj['ground'] = True")
-print("   → Ready for Babylon.js ChunkManager!")
+print(f"All chunk exported {export_file}")
+manifest_path = os.path.join(export_path, "tile_manifest.json")
+with open(manifest_path, 'w') as f:
+    json.dump(manifest, f, indent=2)
+print(f"Manifest exported: {manifest_path}")
