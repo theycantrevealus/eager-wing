@@ -41,6 +41,9 @@
     "__&types/*": [
       "./src/types/*"
     ],
+    "__&stores/*": [
+      "./src/stores/*"
+    ],
     "__&interfaces/*": [
       "./src/interfaces/*"
     ],
@@ -79,6 +82,7 @@
   },
   "dependencies": {
     "@primeuix/themes": "^1.2.5",
+    "axios": "^1.13.2",
     "babylonjs": "^8.31.3",
     "babylonjs-gui": "^8.31.3",
     "babylonjs-loaders": "^8.33.4",

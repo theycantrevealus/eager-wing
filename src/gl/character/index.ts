@@ -225,16 +225,6 @@ export class EagerWing___Character {
 
   /**
    * @public
-   * Model load state asyncronously
-   *
-   * @returns
-   */
-  public async waitForLoad(): Promise<void> {
-    // return this.loadPromise
-  }
-
-  /**
-   * @public
    * Handle character animation update
    *
    * @returns { void }
@@ -587,6 +577,7 @@ export class EagerWing___Character {
   public toogleCombatMode(
     getAnimationGroup: Record<string, BABYLON.AnimationGroup> | null,
   ) {
+    this.stopAllAnimations(getAnimationGroup!) // TODO : this make animation not smooth. Fix it
     if (getAnimationGroup)
       this.playAnimation(
         getAnimationGroup,
@@ -594,6 +585,7 @@ export class EagerWing___Character {
           ? `UnArmed-Idle_instance_${this.characterAttribute.modelId}`
           : `Armed-Idle_instance_${this.characterAttribute.modelId}`,
       )
+
     this.combatMode = !this.combatMode
   }
 }

@@ -5,10 +5,11 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "module": "esnext",
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": true,
     "paths": {
       "__&types/*": ["./src/types/*"],
+      "__&stores/*": ["./src/stores/*"],
       "__&constants/*": ["./src/constants/*"],
       "__&interfaces/*": ["./src/interfaces/*"],
       "__&utils/*": ["./src/utils/*"],
@@ -17,7 +18,7 @@
     },
 
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    // "types": ["vite/client"],
+    "types": ["vite/client"],
     "typeRoots": ["./node_modules/@types"],
 
     /* Linting */
@@ -29,5 +30,5 @@
     "noUncheckedSideEffectImports": true
   },
   "exclude": ["node_modules", "dist"],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "vite-env.d.ts"]
 }

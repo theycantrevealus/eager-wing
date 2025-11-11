@@ -10,6 +10,10 @@ import type { CharacterAttribute } from "__&types/Character"
 import { EagerWing___AssetManager } from "__&utils/asset.manager"
 import { EagerWing___Character } from "__&GL/character"
 import type { KeyState } from "__&interfaces/keyboard"
+import { EagerWing___Map } from "__&GL/map"
+import type { LogStore } from "__&stores/utils/log"
+import { HttpClient } from "__&utils/axios"
+import { Tile } from "__&interfaces/map.config"
 
 /**
  * This is lab renderer to develop basic character control module
@@ -21,11 +25,19 @@ import type { KeyState } from "__&interfaces/keyboard"
  */
 
 export class EagerWing___LabControl {
+  /** Store */
+  private logStore: LogStore
+
+  /** HTTP Client */
+  private httpClient: HttpClient
+
   /** Engine renderer. */
   private engine: BABYLON.Engine
 
   /** The active BabylonJS scene used for load. */
   private scene: BABYLON.Scene
+
+  private mapManager: EagerWing___Map | null = null
 
   /** Camera Instance Manager. */
   private cameraActionManager: EagerWing___CameraAction
@@ -68,10 +80,12 @@ export class EagerWing___LabControl {
    * Character Control Lab
    * Use it for development purposes only
    *
+   * @param { LogStore } chatStore - Pinia chat store
    * @param { HTMLCanvasElement } canvas - Canvas used for load animation
    * @param { CharacterAttribute } - characterAttribute - Init character configuration
    */
   constructor(
+    logStore: LogStore,
     canvas: HTMLCanvasElement,
     assetsLibrary: Map<string, string>,
     characterAttribute: Map<
@@ -79,6 +93,30 @@ export class EagerWing___LabControl {
       { attribute: CharacterAttribute; object: string; allowMovement: boolean }
     >,
   ) {
+    const authMiddleware = async (config: any) => {
+      config.headers = {
+        ...config.headers,
+        Authorization: "Bearer example_token",
+      }
+      return config
+    }
+
+    const jsonMiddleware = async (response: any) => {
+      return response
+    }
+
+    const errorHandler = async (err: any) => {
+      throw err
+    }
+
+    this.httpClient = new HttpClient({
+      baseURL: `${import.meta.env.VITE_SERVER_ASSET}/chunks_lod/`,
+      requestMiddlewares: [authMiddleware],
+      responseMiddlewares: [jsonMiddleware],
+      errorMiddlewares: [errorHandler],
+    })
+
+    this.logStore = logStore
     this.characterAttribute = characterAttribute
     /** Configure the canvas */
     canvas.style.width = "100%"
@@ -115,10 +153,10 @@ export class EagerWing___LabControl {
 
     const dirLight = new BABYLON.DirectionalLight(
       "dirLight",
-      new BABYLON.Vector3(-1, -2, -1), // direction
+      new BABYLON.Vector3(-1, -2, -1),
       this.scene,
     )
-    dirLight.position = new BABYLON.Vector3(20, 40, 20)
+    dirLight.position = new BABYLON.Vector3(20, 120, 20)
 
     this.shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight)
     this.shadowGenerator.useBlurExponentialShadowMap = true
@@ -132,13 +170,44 @@ export class EagerWing___LabControl {
 
     this.setupInteractions()
 
+    this.scene.activeCamera = this.cameraActionManager.getCamera()
+
     this.init(assetsLibrary, characterAttribute).then(() => {
       this.animate()
     })
 
-    this.scene.activeCamera = this.cameraActionManager.getCamera()
-
     // this.scene.onKeyboardObservable.add(this.keyboardFunction.bind(this))
+  }
+
+  async setupMap(): Promise<void> {
+    await this.httpClient
+      .get<Tile[]>("/tile_manifest.json")
+      .then((manifest) => {
+        manifest.match({
+          success: (u) => {
+            this.mapManager = new EagerWing___Map(
+              this.logStore,
+              this.scene,
+              null,
+              {
+                name: "dessert",
+                url: `${import.meta.env.VITE_SERVER_ASSET}/chunks_lod/`,
+                manifest: u,
+                load_radius: 600,
+                load_grid_radius: 2,
+                tile_size: 408.8,
+                eps: 1e-6,
+              },
+            )
+          },
+          failure: (err) => {
+            this.logStore.addMessage({
+              type: "error",
+              content: `${err.message}: ${err.stack?.toString()}`,
+            })
+          },
+        })
+      })
   }
 
   animate(): void {
@@ -162,6 +231,16 @@ export class EagerWing___LabControl {
         }
       })
 
+      /** Update map character */
+      const mainPlayer = this.characterInstances.get("mainPlayer")
+      if (this.mapManager && !this.mapManager.getPlayer() && mainPlayer) {
+        this.mapManager.updateTiles()
+      } else {
+        this.logStore.addMessage({
+          type: "info",
+          content: "Player is not detected on main scene",
+        })
+      }
       this.scene.render()
       this.stats.end()
     })
@@ -249,11 +328,11 @@ export class EagerWing___LabControl {
       }
     >,
   ): Promise<void> {
-    BABYLON.MeshBuilder.CreateGround(
-      "ground",
-      { width: 50, height: 50 },
-      this.scene,
-    )
+    // BABYLON.MeshBuilder.CreateGround(
+    //   "ground",
+    //   { width: 50, height: 50 },
+    //   this.scene,
+    // )
 
     // ground.receiveShadows = true
 
@@ -272,8 +351,6 @@ export class EagerWing___LabControl {
 
         const { root, getAnimationGroup } = characterInstance.createCharacter()
 
-        // const chunkManager = new EagerWing___Map(this.scene, root)
-
         this.characterInstances?.set(key, {
           instance: characterInstance,
           root,
@@ -281,5 +358,37 @@ export class EagerWing___LabControl {
         })
       }
     })
+
+    const mainPlayer = this.characterInstances.get("mainPlayer")
+
+    if (this.scene.activeCamera) {
+      if (mainPlayer && mainPlayer.root) {
+        this.logStore.addMessage({
+          type: "debug",
+          content: `Player position: ${mainPlayer.root.position}`,
+        })
+        this.logStore.addMessage({
+          type: "debug",
+          content: `Player bounding box size: ${mainPlayer.root.getHierarchyBoundingVectors()}`,
+        })
+
+        await this.setupMap()
+
+        if (this.mapManager) {
+          this.mapManager.setPlayer(mainPlayer?.root)
+          await this.mapManager.initialLoadPromise
+        }
+      } else {
+        this.logStore.addMessage({
+          type: "debug",
+          content: "⚠️ No mainPlayer found; map streaming not started.",
+        })
+      }
+    } else {
+      this.logStore.addMessage({
+        type: "debug",
+        content: "⚠️ No camera active.",
+      })
+    }
   }
 }

@@ -1,145 +1,195 @@
+import type {
+  MapConfig,
+  MapValidationError,
+  Tile,
+} from "__&interfaces/map.config"
+import type { LogStore } from "__&stores/utils/log"
 import * as BABYLON from "babylonjs"
 
 export class EagerWing___Map {
+  private logStore: LogStore
   private scene: BABYLON.Scene
-  private player: BABYLON.TransformNode
-  private loadRadius = 100
-  private chunkSize = 100
-  private loadedChunks = new Map<string, BABYLON.AssetContainer>()
-  private groundName = "ground"
+  private player: BABYLON.TransformNode | null
 
-  constructor(scene: BABYLON.Scene, player: BABYLON.TransformNode) {
+  private loadingPromises: Set<string> = new Set()
+  private skeletonMeshes: { [key: string]: BABYLON.AbstractMesh } = {}
+  private loadedMeshes: { [key: string]: BABYLON.AbstractMesh[] } = {}
+  private errors: MapValidationError[] = []
+  private config: MapConfig
+
+  public isInitialized = false
+  public isReady = false
+  public initialLoadPromise: Promise<void> | null = null
+
+  constructor(
+    logStore: LogStore,
+    scene: BABYLON.Scene,
+    player: BABYLON.TransformNode | null,
+    config: MapConfig,
+  ) {
+    this.logStore = logStore
     this.scene = scene
     this.player = player
-    this.scene.onBeforeRenderObservable.add(() => this.updateChunks())
+    this.config = config
+
+    this.createSkeleton()
+    this.isInitialized = true
   }
 
-  private getChunkKey(pos: BABYLON.Vector3): string {
-    const x = Math.floor(pos.x / this.chunkSize)
-    const z = Math.floor(pos.z / this.chunkSize)
-    return `${x}_${z}`
-  }
+  private createSkeleton() {
+    const okMat = new BABYLON.StandardMaterial("ok", this.scene)
+    okMat.wireframe = true
+    okMat.emissiveColor = new BABYLON.Color3(0, 1, 0)
 
-  private async loadChunk(key: string, cx: number, cz: number): Promise<void> {
-    if (this.loadedChunks.has(key)) return
+    const badMat = new BABYLON.StandardMaterial("bad", this.scene)
+    badMat.wireframe = true
+    badMat.emissiveColor = new BABYLON.Color3(1, 0, 0)
 
-    const path = `maps/mountain001/chunk_${cx}_${cz}.glb`
-
-    try {
-      const container = await BABYLON.SceneLoader.LoadAssetContainerAsync(
-        "",
-        path,
+    this.config.manifest.forEach((tile) => {
+      const [w, d] = tile.size
+      const box = BABYLON.MeshBuilder.CreateBox(
+        `tile_${tile.x}_${tile.z}`,
+        { width: w, height: 1, depth: d },
         this.scene,
-        null,
-        ".glb",
       )
+      box.position.x = tile.center[0]
+      box.position.z = tile.center[1]
+      box.position.y = 0.5
 
-      container.meshes.forEach((mesh) => {
-        if (mesh.name === "__root__") return
+      const hasError = this.errors.some((e) => e.tile === tile)
+      box.material = hasError ? badMat : okMat
+      this.skeletonMeshes[`${tile.x},${tile.z}`] = box
+    })
+  }
 
-        mesh.isPickable = true
-        mesh.name = `ground_${mesh.name}` // <-- force "ground", last test using ground hehe
+  public approxEq(a: number, b: number): boolean {
+    return Math.abs(a - b) < this.config.eps
+  }
 
-        mesh.position.x += cx * this.chunkSize
-        mesh.position.z += cz * this.chunkSize
+  private unloadTile(tile: Tile): void {
+    const key = `${tile.x},${tile.z}`
+    if (this.loadedMeshes[key]) {
+      this.loadedMeshes[key].forEach((m) => m.dispose())
+      delete this.loadedMeshes[key]
+      this.logStore.addMessage({
+        type: "info",
+        content: `Unloaded (${tile.x},${tile.z})`,
       })
-
-      container.addAllToScene()
-      this.loadedChunks.set(key, container)
-      console.log(`[ChunkManager] Loaded ${path}`)
-    } catch (e) {
-      console.error(`[ChunkManager] Load failed ${path}`, e)
     }
   }
 
-  private unloadChunk(key: string): void {
-    const container = this.loadedChunks.get(key)
-    if (!container) return
+  public updateTiles() {
+    if (this.player) {
+      const boxPos = this.player.position
 
-    container.removeAllFromScene()
-    container.dispose()
-    this.loadedChunks.delete(key)
-    console.log(`[ChunkManager] Unloaded ${key}`)
+      const gridX = -Math.round(boxPos.x / this.config.tile_size)
+      const gridZ = -Math.round(boxPos.z / this.config.tile_size)
+
+      for (const tile of this.config.manifest) {
+        const dX = Math.abs(tile.x - gridX)
+        const dZ = Math.abs(tile.z - gridZ)
+        const dist = Math.max(dX, dZ)
+
+        if (dist <= this.config.load_grid_radius) {
+          this.loadTile(tile)
+        } else {
+          this.unloadTile(tile)
+        }
+      }
+    }
   }
 
-  private getGroundHeight(worldPosXZ: BABYLON.Vector3): number {
-    const origin = worldPosXZ.clone()
-    origin.y += 500
-    const direction = new BABYLON.Vector3(0, -1, 0)
-    const ray = new BABYLON.Ray(origin, direction, 1000)
+  private async loadInitialTiles(): Promise<void> {
+    if (!this.player) return
 
-    const pick = this.scene.pickWithRay(ray, (mesh) => {
-      return (
-        mesh.isPickable && mesh.name.toLowerCase().includes(this.groundName)
-      )
+    const pos = this.player.position
+
+    const gridX = -Math.round(pos.x / this.config.tile_size)
+    const gridZ = -Math.round(pos.z / this.config.tile_size)
+
+    // Collect load promises
+    const promises: Promise<void>[] = []
+
+    for (const tile of this.config.manifest) {
+      const dX = Math.abs(tile.x - gridX)
+      const dZ = Math.abs(tile.z - gridZ)
+      const dist = Math.max(dX, dZ)
+
+      if (dist <= this.config.load_grid_radius) {
+        promises.push(this.loadTile(tile))
+      }
+    }
+
+    await Promise.all(promises)
+
+    this.isReady = true
+  }
+
+  private async loadTile(tile: Tile): Promise<void> {
+    const key = `${tile.x},${tile.z}`
+    if (this.loadedMeshes[key] || this.loadingPromises.has(key)) return
+
+    this.loadingPromises.add(key)
+    this.logStore.addMessage({
+      type: "info",
+      content: `Loading ${tile.lod0}`,
     })
 
-    return pick?.hit ? pick.pickedPoint!.y : worldPosXZ.y
-  }
+    try {
+      const result = await BABYLON.SceneLoader.ImportMeshAsync(
+        "",
+        this.config.url,
+        tile.lod0,
+        this.scene,
+      )
 
-  private updateChunks(): void {
-    const playerPos = this.player.getAbsolutePosition()
-    const playerXZ = new BABYLON.Vector3(playerPos.x, 0, playerPos.z)
-
-    // Snap force. Capek kalau ngitung terus.
-    // Pakai ini aja deh buat maksa y position ketemu ground.
-    //
-    // const groundY = this.getGroundHeight(playerXZ);
-    // this.player.position.y = groundY + 1.7;
-
-    const centerChunkX = Math.floor(playerPos.x / this.chunkSize)
-    const centerChunkZ = Math.floor(playerPos.z / this.chunkSize)
-    const toLoad = new Set<string>()
-
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const cx = centerChunkX + dx
-        const cz = centerChunkZ + dz
-        const key = `${cx}_${cz}`
-
-        const chunkCenter = new BABYLON.Vector3(
-          cx * this.chunkSize + this.chunkSize / 2,
-          0,
-          cz * this.chunkSize + this.chunkSize / 2,
-        )
-
-        const dist = BABYLON.Vector3.Distance(playerXZ, chunkCenter)
-        if (dist <= this.loadRadius + this.chunkSize / 2) {
-          toLoad.add(key)
-          if (!this.loadedChunks.has(key)) {
-            this.loadChunk(key, cx, cz)
-          }
-        }
+      if (result.meshes.length === 0) {
+        this.logStore.addMessage({
+          type: "warning",
+          content: `No meshes in ${tile.lod0}`,
+        })
+        return
       }
-    }
 
-    // Unload far chunks
-    for (const [key] of this.loadedChunks) {
-      if (!toLoad.has(key)) {
-        const [cx, cz] = key.split("_").map(Number)
-        if (cx && cz) {
-          const chunkCenter = new BABYLON.Vector3(
-            cx * this.chunkSize + this.chunkSize / 2,
-            0,
-            cz * this.chunkSize + this.chunkSize / 2,
-          )
-          if (
-            BABYLON.Vector3.Distance(playerXZ, chunkCenter) >
-            this.loadRadius * 1.5
-          ) {
-            this.unloadChunk(key)
-          }
-        }
-      }
+      this.loadedMeshes[key] = result.meshes
+
+      result.meshes.forEach((mesh) => {
+        mesh.isPickable = true
+        mesh.name = "ground"
+      })
+
+      this.logStore.addMessage({
+        type: "info",
+        content: `Loaded ${tile.lod0}`,
+      })
+    } catch (err: any) {
+      this.logStore.addMessage({
+        type: "error",
+        content: `Failed ${tile.lod0}: ${err.message}`,
+      })
+    } finally {
+      this.loadingPromises.delete(key)
     }
   }
 
+  public getPlayer(): BABYLON.TransformNode | null {
+    return this.player
+  }
+
+  public setPlayer(player: BABYLON.TransformNode) {
+    this.player = player
+    if (!this.initialLoadPromise) {
+      this.initialLoadPromise = this.loadInitialTiles()
+    }
+  }
+
+  /**
+   * @public
+   * Clear instance
+   *
+   * @returns { void }
+   */
   public dispose(): void {
-    this.scene.onBeforeRenderObservable.removeCallback(() =>
-      this.updateChunks(),
-    )
-    for (const key of this.loadedChunks.keys()) {
-      this.unloadChunk(key)
-    }
+    //
   }
 }
