@@ -90,11 +90,14 @@ export class EagerWing___Map {
 
       const gridX = -Math.round(boxPos.x / this.config.tile_size)
       const gridZ = -Math.round(boxPos.z / this.config.tile_size)
+      const radius = this.config.load_grid_radius
 
       for (const tile of this.config.manifest) {
         const dX = Math.abs(tile.x - gridX)
         const dZ = Math.abs(tile.z - gridZ)
         const dist = Math.max(dX, dZ)
+
+        if (dX > radius + 1 || dZ > radius + 1) continue
 
         if (dist <= this.config.load_grid_radius) {
           this.loadTile(tile)
