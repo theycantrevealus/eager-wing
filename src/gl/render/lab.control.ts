@@ -37,6 +37,14 @@ export class EagerWing___LabControl {
   /** The active BabylonJS scene used for load. */
   private scene: BABYLON.Scene
 
+  /** Event instances */
+  private renderLoopCallback?: () => void
+  private boundResizeHandler?: () => void
+  private boundKeydownHandler?: (e: KeyboardEvent) => void
+  private boundKeyupHandler?: (e: KeyboardEvent) => void
+  private boundBlurHandler?: () => void
+  private isDestroyed = false
+
   private mapManager: EagerWing___Map | null = null
 
   /** Camera Instance Manager. */
@@ -211,7 +219,7 @@ export class EagerWing___LabControl {
   }
 
   animate(): void {
-    this.engine.runRenderLoop(() => {
+    this.renderLoopCallback = () => {
       this.stats.begin()
       // @ts-ignore
       this.characterInstances.forEach((value, key) => {
@@ -236,44 +244,54 @@ export class EagerWing___LabControl {
       if (this.mapManager && !this.mapManager.getPlayer() && mainPlayer) {
         this.mapManager.updateTiles()
       }
-      this.scene.render()
+      if (this.scene) this.scene.render()
       this.stats.end()
-    })
+    }
+
+    this.engine.runRenderLoop(this.renderLoopCallback)
+  }
+
+  private handleKeydown(e: KeyboardEvent): void {
+    if (e.key === "w") this.keyboardKey.w = true
+    if (e.key === "a") this.keyboardKey.a = true
+    if (e.key === "s") this.keyboardKey.s = true
+    if (e.key === "d") this.keyboardKey.d = true
+    if (e.code === "Space") this.keyboardKey.space = true
+
+    if (e.key === "x")
+      this.characterInstances
+        .get("mainPlayer")
+        ?.instance.toogleCombatMode(
+          this.characterInstances.get("mainPlayer")?.getAnimationGroup ?? null,
+        )
+  }
+
+  private handleKeyup(e: KeyboardEvent): void {
+    if (e.key === "w") this.keyboardKey.w = false
+    if (e.key === "a") this.keyboardKey.a = false
+    if (e.key === "s") this.keyboardKey.s = false
+    if (e.key === "d") this.keyboardKey.d = false
+    if (e.code === "Space") this.keyboardKey.space = false
+  }
+
+  private handleBlur(): void {
+    this.keyboardKey.w = false
+    this.keyboardKey.a = false
+    this.keyboardKey.s = false
+    this.keyboardKey.d = false
+    this.keyboardKey.space = false
   }
 
   setupInteractions(): void {
-    window.addEventListener("resize", this.handleResize)
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "w") this.keyboardKey.w = true
-      if (e.key === "a") this.keyboardKey.a = true
-      if (e.key === "s") this.keyboardKey.s = true
-      if (e.key === "d") this.keyboardKey.d = true
-      if (e.code === "Space") this.keyboardKey.space = true
+    this.boundResizeHandler = this.handleResize.bind(this)
+    this.boundKeydownHandler = this.handleKeydown.bind(this)
+    this.boundKeyupHandler = this.handleKeyup.bind(this)
+    this.boundBlurHandler = this.handleBlur.bind(this)
 
-      if (e.key === "x")
-        this.characterInstances
-          .get("mainPlayer")
-          ?.instance.toogleCombatMode(
-            this.characterInstances.get("mainPlayer")?.getAnimationGroup ??
-              null,
-          )
-    })
-
-    window.addEventListener("keyup", (e) => {
-      if (e.key === "w") this.keyboardKey.w = false
-      if (e.key === "a") this.keyboardKey.a = false
-      if (e.key === "s") this.keyboardKey.s = false
-      if (e.key === "d") this.keyboardKey.d = false
-      if (e.code === "Space") this.keyboardKey.space = false
-    })
-
-    window.addEventListener("blur", () => {
-      this.keyboardKey.w = false
-      this.keyboardKey.a = false
-      this.keyboardKey.s = false
-      this.keyboardKey.d = false
-      this.keyboardKey.space = false
-    })
+    window.addEventListener("resize", this.boundResizeHandler)
+    window.addEventListener("keydown", (e) => this.handleKeydown(e))
+    window.addEventListener("keyup", (e) => this.handleKeyup(e))
+    window.addEventListener("blur", this.handleBlur)
   }
 
   handleResize(): void {
@@ -281,28 +299,51 @@ export class EagerWing___LabControl {
   }
 
   destroy(): void {
+    if (this.isDestroyed) return
+    this.isDestroyed = true
+
+    if (this.renderLoopCallback) {
+      this.engine.stopRenderLoop(this.renderLoopCallback)
+    }
     if (import.meta.hot) {
       import.meta.hot.dispose(() => {
-        this.scene.dispose()
-        this.engine.dispose()
+        this.destroy()
       })
     }
 
-    window.removeEventListener("resize", () => this.handleResize())
-    window.removeEventListener("keyup", () => {})
-    window.removeEventListener("keydown", () => {})
-    window.removeEventListener("blur", () => {})
+    if (this.boundResizeHandler)
+      window.removeEventListener("resize", this.boundResizeHandler)
+
+    if (this.boundKeydownHandler)
+      window.removeEventListener("keydown", this.boundKeydownHandler)
+
+    if (this.boundKeyupHandler)
+      window.removeEventListener("keyup", this.boundKeyupHandler)
+
+    if (this.boundBlurHandler)
+      window.removeEventListener("blur", this.boundBlurHandler)
 
     if (this.cameraActionManager) this.cameraActionManager.destroy()
 
+    this.stats.dom.remove()
     if (this.stats.dom.parentNode) {
       this.stats.dom.parentNode.removeChild(this.stats.dom)
     }
 
     const canvas = this.engine.getRenderingCanvas()
     if (canvas?.parentNode) {
+      canvas.remove()
       canvas.parentNode.removeChild(canvas)
     }
+
+    this.mapManager?.dispose?.()
+    this.mapManager = null
+
+    this.characterInstances.forEach(({ instance, root }) => {
+      instance.destroy?.()
+      root.dispose()
+    })
+    this.characterInstances.clear()
   }
 
   /**
