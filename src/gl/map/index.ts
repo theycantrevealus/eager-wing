@@ -68,9 +68,15 @@ export class EagerWing___Map {
 
   private unloadTile(tile: Tile): void {
     const key = `${tile.x},${tile.z}`
-    if (this.loadedMeshes[key]) {
-      this.loadedMeshes[key].forEach((m) => m.dispose())
+    const meshContainer = this.loadedMeshes[key]
+    if (meshContainer) {
+      meshContainer.forEach((m) => {
+        m.dispose()
+        m.setParent(null)
+      })
+
       delete this.loadedMeshes[key]
+
       this.logStore.addMessage({
         type: "info",
         content: `Unloaded (${tile.x},${tile.z})`,
@@ -190,6 +196,27 @@ export class EagerWing___Map {
    * @returns { void }
    */
   public dispose(): void {
-    //
+    // Unload all loaded tiles
+    for (const tile of this.config.manifest) {
+      this.unloadTile(tile)
+    }
+
+    // Dispose skeleton boxes
+    Object.values(this.skeletonMeshes).forEach((box) => {
+      box.dispose()
+    })
+    this.skeletonMeshes = {}
+
+    // Dispose materials
+    this.scene.materials.forEach((mat) => {
+      if (mat.name === "ok" || mat.name === "bad") {
+        mat.dispose()
+      }
+    })
+
+    this.loadingPromises.clear()
+    this.isInitialized = false
+    this.isReady = false
+    this.initialLoadPromise = null
   }
 }
