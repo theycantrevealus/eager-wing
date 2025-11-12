@@ -1,3 +1,14 @@
+## [1.3.3](https://github.com/theycantrevealus/eager-wing/compare/v1.3.2...v1.3.3) (2025-11-12)
+
+
+### Bug Fixes
+
+* chunk logic using bisect, so the slices will not jagged between tiles ([1c529e2](https://github.com/theycantrevealus/eager-wing/commit/1c529e2d335c0340c6804b95124343926c1cdf54))
+* handle clean recycle of unused instances and event ([5b130ce](https://github.com/theycantrevealus/eager-wing/commit/5b130ce47fe779e03066989355a53d1dccb2165f))
+* performance enhancement ([de751a2](https://github.com/theycantrevealus/eager-wing/commit/de751a29e0ff66c73f947ce7d7134fddaaecf14b))
+* remove unused raycast and set it re-useable as instance on class property ([6a4754f](https://github.com/theycantrevealus/eager-wing/commit/6a4754f61544fc5dba6ebe80db10c0254ad07724))
+* trigger update tile only if radius changed instead of everytime ([4c0806e](https://github.com/theycantrevealus/eager-wing/commit/4c0806ea1f583b12cf5b3bdefc88c9d10081e437))
+
 ## [1.3.2](https://github.com/theycantrevealus/eager-wing/compare/v1.3.1...v1.3.2) (2025-10-28)
 
 
