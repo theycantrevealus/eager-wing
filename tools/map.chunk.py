@@ -21,6 +21,41 @@ blend_dir = bpy.path.abspath("//")
 export_path = os.path.join(blend_dir, export_folder)
 os.makedirs(export_path, exist_ok=True)
 
+# --------------------------------------------------------------
+#  NEW, SAFE bisect_chunk (replace the old one)
+# --------------------------------------------------------------
+def bisect_chunk(obj, bx_min, bx_max, bz_min, bz_max, eps=EPS):
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+
+    # Keep all geometry initially
+#    geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+
+    def all_geom():
+        return bm.verts[:] + bm.edges[:] + bm.faces[:]
+
+    # Cut and KEEP the inside (clear_inner=True, clear_outer=False)
+    geom = all_geom()
+    bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(bx_min, 0, 0), plane_no=( 1, 0, 0), clear_inner=True,  clear_outer=False)
+    
+    geom = all_geom()
+    bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(bx_max, 0, 0), plane_no=(-1, 0, 0), clear_inner=True,  clear_outer=False)
+    
+    geom = all_geom()
+    bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(0, 0, bz_min), plane_no=( 0, 0, 1), clear_inner=True,  clear_outer=False)
+    
+    geom = all_geom()
+    bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(0, 0, bz_max), plane_no=( 0, 0,-1), clear_inner=True,  clear_outer=False)
+
+    # Remove any verts still outside (safety)
+    for v in bm.verts:
+        if not (bx_min - eps <= v.co.x <= bx_max + eps and bz_min - eps <= v.co.z <= bz_max + eps):
+            bm.verts.remove(v)
+
+    bm.to_mesh(obj.data)
+    bm.free()
+
 obj = bpy.data.objects.get(mesh_name)
 if not obj or obj.type != 'MESH':
     raise RuntimeError(f"Mesh '{mesh_name}' not found")
@@ -88,19 +123,13 @@ for ix in range(chunks_x):
         bpy.context.collection.objects.link(chunk_obj)
         chunk_obj.name = f"chunk_{chunk_x}_{chunk_z}_lod0"
 
+        bisect_chunk(chunk_obj, bx_min, bx_max, bz_min, bz_max)
+        
         bpy.context.view_layer.objects.active = chunk_obj
         bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-        for v in chunk_obj.data.vertices:
-            if (bx_min - EPS) <= v.co.x <= (bx_max + EPS) and (bz_min - EPS) <= v.co.z <= (bz_max + EPS):
-                v.select = False
-            else:
-                v.select = True
-
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.delete(type='VERT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.remove_doubles(threshold=0.0001)
+        bpy.ops.mesh.delete_loose()
         bpy.ops.object.mode_set(mode='OBJECT')
 
         # LODs
@@ -122,7 +151,7 @@ for ix in range(chunks_x):
             bpy.ops.object.select_all(action='DESELECT')
             lod_obj.select_set(True)
             bpy.context.view_layer.objects.active = lod_obj
-            
+
             lod_obj.rotation_euler = (math.radians(90), 0, 0)
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
@@ -132,15 +161,14 @@ for ix in range(chunks_x):
             bpy.ops.export_scene.gltf(
                 filepath=export_file,
                 export_format='GLTF_SEPARATE',
-                export_apply=True,
                 export_yup=True,
-                export_draco_mesh_compression_enable=True,
+                export_draco_mesh_compression_enable=use_draco,
                 export_draco_position_quantization=settings['pos'],
                 export_draco_normal_quantization=settings['norm'],
                 export_draco_texcoord_quantization=settings['tex'],
+                export_force_sampling=True,
                 use_selection=True
             )
-
             print(f"Exported: {lod_name}")
 
         # CLEANUP
