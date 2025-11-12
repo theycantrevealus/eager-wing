@@ -76,11 +76,6 @@ export class EagerWing___Map {
       })
 
       delete this.loadedMeshes[key]
-
-      this.logStore.addMessage({
-        type: "info",
-        content: `Unloaded (${tile.x},${tile.z})`,
-      })
     }
   }
 
@@ -139,10 +134,6 @@ export class EagerWing___Map {
     if (this.loadedMeshes[key] || this.loadingPromises.has(key)) return
 
     this.loadingPromises.add(key)
-    this.logStore.addMessage({
-      type: "info",
-      content: `Loading ${tile.lod0}`,
-    })
 
     try {
       const result = await BABYLON.SceneLoader.ImportMeshAsync(
@@ -165,11 +156,6 @@ export class EagerWing___Map {
       result.meshes.forEach((mesh) => {
         mesh.isPickable = true
         mesh.name = "ground"
-      })
-
-      this.logStore.addMessage({
-        type: "info",
-        content: `Loaded ${tile.lod0}`,
       })
     } catch (err: any) {
       this.logStore.addMessage({

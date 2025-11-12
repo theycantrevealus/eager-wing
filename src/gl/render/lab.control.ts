@@ -193,7 +193,7 @@ export class EagerWing___LabControl {
                 name: "dessert",
                 url: `${import.meta.env.VITE_SERVER_ASSET}/chunks_lod/`,
                 manifest: u,
-                load_radius: 600,
+                load_radius: 100,
                 load_grid_radius: 2,
                 tile_size: 408.8,
                 eps: 1e-6,
@@ -235,11 +235,6 @@ export class EagerWing___LabControl {
       const mainPlayer = this.characterInstances.get("mainPlayer")
       if (this.mapManager && !this.mapManager.getPlayer() && mainPlayer) {
         this.mapManager.updateTiles()
-      } else {
-        this.logStore.addMessage({
-          type: "info",
-          content: "Player is not detected on main scene",
-        })
       }
       this.scene.render()
       this.stats.end()
@@ -328,14 +323,6 @@ export class EagerWing___LabControl {
       }
     >,
   ): Promise<void> {
-    // BABYLON.MeshBuilder.CreateGround(
-    //   "ground",
-    //   { width: 50, height: 50 },
-    //   this.scene,
-    // )
-
-    // ground.receiveShadows = true
-
     await this.assetManager.loadAll(Object.fromEntries(assetsLibrary))
 
     attributeList.forEach(({ object, attribute }, key) => {
@@ -363,32 +350,13 @@ export class EagerWing___LabControl {
 
     if (this.scene.activeCamera) {
       if (mainPlayer && mainPlayer.root) {
-        this.logStore.addMessage({
-          type: "debug",
-          content: `Player position: ${mainPlayer.root.position}`,
-        })
-        this.logStore.addMessage({
-          type: "debug",
-          content: `Player bounding box size: ${mainPlayer.root.getHierarchyBoundingVectors()}`,
-        })
-
         await this.setupMap()
 
         if (this.mapManager) {
           this.mapManager.setPlayer(mainPlayer?.root)
           await this.mapManager.initialLoadPromise
         }
-      } else {
-        this.logStore.addMessage({
-          type: "debug",
-          content: "⚠️ No mainPlayer found; map streaming not started.",
-        })
       }
-    } else {
-      this.logStore.addMessage({
-        type: "debug",
-        content: "⚠️ No camera active.",
-      })
     }
   }
 }
