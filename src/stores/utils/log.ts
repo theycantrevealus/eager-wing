@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 
-export const useChatStore = defineStore("chat", {
+export const useLogStore = defineStore("log", {
   state: () => ({
     messages: [] as Array<{
       type: string
@@ -9,7 +9,7 @@ export const useChatStore = defineStore("chat", {
   }),
   actions: {
     addMessage(message: { type: string; content: string }) {
-      const THRESHOLD = 1000
+      const THRESHOLD = 100
       this.messages.push(message)
       if (this.messages.length > THRESHOLD) {
         this.messages.shift()
@@ -22,3 +22,5 @@ export const useChatStore = defineStore("chat", {
     },
   },
 })
+
+export type LogStore = ReturnType<typeof useLogStore>

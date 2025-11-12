@@ -24,12 +24,12 @@ export const LAB_CHARACTER: Map<
           job: "warrior",
           race: "asmodian",
           dimension: {
-            scale: 0.005,
+            scale: 1,
           },
         },
         position: {
           x: 0,
-          y: 0,
+          y: 20,
           z: 0,
         },
         style: {

@@ -20,6 +20,12 @@ export class EagerWing___Character {
   /** The active BabylonJS scene used for asset loading. */
   private scene: BABYLON.Scene
 
+  private ray: BABYLON.Ray = new BABYLON.Ray(
+    new BABYLON.Vector3(),
+    new BABYLON.Vector3(),
+    0,
+  )
+
   /** Label manager. */
   private label: EagerWing___Label
 
@@ -63,7 +69,7 @@ export class EagerWing___Character {
   private groundTolerance: number = 0.5
   private gravityForce: number = 10
   private isJumping: boolean = false
-  private jumpPower: number = 6
+  private jumpPower: number = 5
   private verticalVelocity: number = 0
   private sideSpeed: number = 0.05
   private runSpeed: number = 0.3
@@ -225,16 +231,6 @@ export class EagerWing___Character {
 
   /**
    * @public
-   * Model load state asyncronously
-   *
-   * @returns
-   */
-  public async waitForLoad(): Promise<void> {
-    // return this.loadPromise
-  }
-
-  /**
-   * @public
    * Handle character animation update
    *
    * @returns { void }
@@ -267,36 +263,45 @@ export class EagerWing___Character {
     ).normalize()
 
     /** ---------------------------------------------------------------------- movement */
+    let useSpeed = this.characterAttribute.speed
     if (w) {
       moveDir.addInPlace(camForward)
       nextAnimName = this.combatMode
         ? `Armed-RunForward_instance_${modelID}`
         : `Unarmed-RunForward_instance_${modelID}`
+      useSpeed = this.combatMode ? this.runSpeed : this.characterAttribute.speed
     }
     if (s) {
       moveDir.subtractInPlace(camForward)
       nextAnimName = this.combatMode
         ? `Armed-WalkBack_instance_${modelID}`
         : `Unarmed-Backward_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
     if (a) {
       moveDir.subtractInPlace(camRight)
       nextAnimName = this.combatMode
         ? `Armed-WalkLeft_instance_${modelID}`
         : `Unarmed-StrafeLeft_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
     if (d) {
       moveDir.addInPlace(camRight)
       nextAnimName = this.combatMode
         ? `Armed-WalkRight_instance_${modelID}`
         : `Unarmed-StrafeRight_instance_${modelID}`
+      useSpeed = this.combatMode
+        ? this.characterAttribute.speed
+        : this.sideSpeed
     }
 
     if (moving) {
       moveDir.normalize()
-      rootInstance.position.addInPlace(
-        moveDir.scale(this.characterAttribute.speed),
-      )
+      rootInstance.position.addInPlace(moveDir.scale(useSpeed))
 
       const camFacing = Math.atan2(camForward.x, camForward.z)
       rootInstance.rotation.y = BABYLON.Scalar.Lerp(
@@ -314,8 +319,11 @@ export class EagerWing___Character {
     const down = new BABYLON.Vector3(0, -1, 0)
     const rayLength = Math.abs(this.feetOffset) + 2
 
-    const ray = new BABYLON.Ray(origin, down, rayLength)
-    const pick = this.scene.pickWithRay(ray, (mesh) => {
+    // this.ray =
+    this.ray.origin.copyFrom(origin)
+    this.ray.direction.copyFrom(down)
+    this.ray.length = rayLength
+    const pick = this.scene.pickWithRay(this.ray, (mesh) => {
       return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
     })
 
@@ -347,8 +355,8 @@ export class EagerWing___Character {
       const originAfter = rootInstance.position.add(
         new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
       )
-      const rayAfter = new BABYLON.Ray(originAfter, down, rayLength)
-      const pickAfter = this.scene.pickWithRay(rayAfter, (mesh) => {
+
+      const pickAfter = this.scene.pickWithRay(this.ray, (mesh) => {
         return mesh.isPickable && mesh.name.toLowerCase().includes("ground")
       })
       const landed = !!(
@@ -371,12 +379,12 @@ export class EagerWing___Character {
            * 
            * nextAnimName = `Unarmed-Land_${this.characterAttribute.modelId}`
 
-  // optionally transition to idle automatically after landing anim
-  setTimeout(() => {
-    if (!this.isJumping) {
-      this.playAnimation(`UnArmed-Idle_${this.characterAttribute.modelId}`)
-    }
-  }, 400) // duration of landing anim in ms
+        // optionally transition to idle automatically after landing anim
+        setTimeout(() => {
+          if (!this.isJumping) {
+            this.playAnimation(`UnArmed-Idle_${this.characterAttribute.modelId}`)
+          }
+        }, 400) // duration of landing anim in ms
            * 
            * 
            */
@@ -578,6 +586,7 @@ export class EagerWing___Character {
   public toogleCombatMode(
     getAnimationGroup: Record<string, BABYLON.AnimationGroup> | null,
   ) {
+    this.stopAllAnimations(getAnimationGroup!) // TODO : this make animation not smooth. Fix it
     if (getAnimationGroup)
       this.playAnimation(
         getAnimationGroup,
@@ -585,6 +594,7 @@ export class EagerWing___Character {
           ? `UnArmed-Idle_instance_${this.characterAttribute.modelId}`
           : `Armed-Idle_instance_${this.characterAttribute.modelId}`,
       )
+
     this.combatMode = !this.combatMode
   }
 }

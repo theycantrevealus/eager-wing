@@ -52,13 +52,13 @@ import { PANEL } from "__&constants/panel"
 import { EagerWing___LabControl } from "__&GL/render/lab.control"
 import type { Panel } from "__&types/Panel"
 import { defineAsyncComponent, defineComponent, markRaw } from "vue"
-import { useChatStore } from "../stores/utils/chat"
+import { useLogStore } from "../stores/utils/log"
 
 export default defineComponent({
   name: "LabControl",
   data() {
     return {
-      chatStore: markRaw(useChatStore()),
+      chatStore: markRaw(useLogStore()),
       processor: null as EagerWing___LabControl | null,
       characterInitAttribute: LAB_CHARACTER,
 
@@ -82,7 +82,7 @@ export default defineComponent({
     }
   },
   // computed: {
-  //   ...mapStores(useChatStore),
+  //   ...mapStores(useLogStore),
   // },
   mounted() {
     this.chatStore.addMessage({
@@ -92,11 +92,12 @@ export default defineComponent({
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    // this.processor = new EagerWing___LabControl(
-    //   canvas,
-    //   new Map([["character", "../characters/DUMMY.glb"]]),
-    //   this.characterInitAttribute,
-    // )
+    this.processor = new EagerWing___LabControl(
+      useLogStore(),
+      canvas,
+      new Map([["character", "../characters/DUMMY.glb"]]),
+      this.characterInitAttribute,
+    )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)

@@ -75,7 +75,7 @@ export class EagerWing___CameraAction {
     followTarget: BABYLON.TransformNode | BABYLON.AbstractMesh | null,
   ): void {
     if (followTarget) {
-      const offset = new BABYLON.Vector3(0, 1, 0)
+      const offset = new BABYLON.Vector3(0, 0.5, 0)
       const desiredTarget = followTarget.position.clone().add(offset)
 
       this.camera.target = BABYLON.Vector3.Lerp(

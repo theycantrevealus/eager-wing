@@ -82,7 +82,7 @@ import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
 import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
-import { useChatStore } from "../../../stores/utils/chat"
+import { useLogStore } from "__&stores/utils/log"
 
 export default defineComponent({
   name: "PanelChat",
@@ -94,7 +94,7 @@ export default defineComponent({
     TabPanel,
   },
   data() {
-    return { chatStore: markRaw(useChatStore()) }
+    return { chatStore: markRaw(useLogStore()) }
   },
   props: {
     debug: { type: Boolean, default: false },
