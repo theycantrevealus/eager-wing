@@ -12,9 +12,13 @@
     "release": "semantic-release"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@types/node": "^24.7.2",
     "husky": "^9.1.7",
     "pnpm": "^10.22.0",
-    "turbo": "^2.6.1"
+    "turbo": "^2.6.1",
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.5.2"
 }

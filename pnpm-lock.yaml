@@ -8,6 +8,15 @@ importers:
 
   .:
     devDependencies:
+      '@commitlint/cli':
+        specifier: ^20.1.0
+        version: 20.1.0(@types/node@24.10.1)(typescript@5.9.3)
+      '@commitlint/config-conventional':
+        specifier: ^20.0.0
+        version: 20.0.0
+      '@types/node':
+        specifier: ^24.7.2
+        version: 24.10.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -17,6 +26,9 @@ importers:
       turbo:
         specifier: ^2.6.1
         version: 2.6.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   apps/client:
     dependencies:
