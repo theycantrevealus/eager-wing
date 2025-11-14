@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/theycantrevealus/eager-wing/compare/v1.3.3...v2.0.0) (2025-11-14)
+
+
+* chore(monorepo)!: migration to monorepo structure ([d6336fa](https://github.com/theycantrevealus/eager-wing/commit/d6336facce154b96b70c345160332e5d8f3f8471))
+
+
+### BREAKING CHANGES
+
+* Preparation to add server and socket
+
 ## [1.3.3](https://github.com/theycantrevealus/eager-wing/compare/v1.3.2...v1.3.3) (2025-11-12)
 
 
