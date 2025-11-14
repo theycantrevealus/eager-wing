@@ -8,7 +8,7 @@
   "scripts": {
     "commitlint": "commitlint --edit ${GIT_PARAMS}",
     "test": "jest --passWithNoTests",
-    "release": "semantic-release",
+    "release": "pnpm dlx semantic-release",
     "prepare": "husky",
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
