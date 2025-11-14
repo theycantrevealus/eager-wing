@@ -42,4 +42,4 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: pnpm release
+        run: pnpm dlx semantic-release

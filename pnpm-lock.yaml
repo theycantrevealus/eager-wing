@@ -17,6 +17,9 @@ importers:
       '@semantic-release/changelog':
         specifier: ^6.0.3
         version: 6.0.3(semantic-release@24.2.9(typescript@5.9.3))
+      '@semantic-release/commit-analyzer':
+        specifier: ^13.0.1
+        version: 13.0.1(semantic-release@24.2.9(typescript@5.9.3))
       '@semantic-release/exec':
         specifier: ^7.1.0
         version: 7.1.0(semantic-release@24.2.9(typescript@5.9.3))
@@ -26,6 +29,9 @@ importers:
       '@semantic-release/npm':
         specifier: ^13.1.1
         version: 13.1.1(semantic-release@24.2.9(typescript@5.9.3))
+      '@semantic-release/release-notes-generator':
+        specifier: ^14.1.0
+        version: 14.1.0(semantic-release@24.2.9(typescript@5.9.3))
       '@types/node':
         specifier: ^24.7.2
         version: 24.10.1
@@ -35,6 +41,9 @@ importers:
       pnpm:
         specifier: ^10.22.0
         version: 10.22.0
+      semantic-release:
+        specifier: ^24.2.9
+        version: 24.2.9(typescript@5.9.3)
       turbo:
         specifier: ^2.6.1
         version: 2.6.1
