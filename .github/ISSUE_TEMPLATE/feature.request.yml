@@ -2,14 +2,14 @@ name: Feature Request
 description: Just think about something good to implement.
 title: "[Feature Request]: "
 labels: ["feature-request"]
-projects: ["eager-wing/3"]
+projects: ["Eager Wing"]
 assignees:
   - theycantrevealus
 body:
   - type: markdown
     attributes:
       value: |
-        Tell us what feature you’re thinking about, why you want it, and how it would help you.
+        Tell us what feature you're thinking about, why you want it, and how it would help you.
   - type: input
     id: contact
     attributes:
@@ -24,7 +24,7 @@ body:
       label: How You Imagine It Working?
       description: Please be clear and more specific
       placeholder: Please provide a clear description of the requested feature, the use case it supports, and the benefits it would bring to your workflow. The more detail you provide, the better we can evaluate the request.
-      value: ""
+      value: "I wonder if"
     validations:
       required: true
   - type: dropdown
