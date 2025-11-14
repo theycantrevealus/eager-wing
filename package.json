@@ -1,98 +1,20 @@
 {
   "name": "eager-wing",
-  "version": "0.0.0",
-  "description": "",
-  "type": "module",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "commitlint": "commitlint --edit ${GIT_PARAMS}",
-    "test": "jest --passWithNoTests",
-    "release": "semantic-release",
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "preview": "turbo run preview",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
     "prepare": "husky",
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "commitlint": "commitlint --edit",
+    "release": "semantic-release"
   },
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  },
-  "jest": {
-    "testMatch": [
-      "**/__tests__/**/*.?([mc])[jt]s?(x)",
-      "**/?(*.)+(spec|test).?([mc])[jt]s?(x)"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/"
-    ]
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/theycantrevealus/eager-wing.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/theycantrevealus/eager-wing/issues"
-  },
-  "imports": {
-    "__&types/*": [
-      "./src/types/*"
-    ],
-    "__&stores/*": [
-      "./src/stores/*"
-    ],
-    "__&interfaces/*": [
-      "./src/interfaces/*"
-    ],
-    "__&constants/*": [
-      "./src/constants/*"
-    ],
-    "__&utils/*": [
-      "./src/utils/*"
-    ],
-    "__&GL/*": [
-      "./src/gl/*"
-    ]
-  },
-  "homepage": "https://github.com/theycantrevealus/eager-wing#readme",
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.6",
-    "@semantic-release/release-notes-generator": "^14.1.0",
-    "@types/node": "^24.7.2",
-    "@types/stats.js": "^0.17.4",
-    "@typescript-eslint/eslint-plugin": "^8.46.1",
-    "@typescript-eslint/parser": "^8.46.1",
-    "@vitejs/plugin-vue": "^6.0.1",
-    "@vue/tsconfig": "^0.8.1",
-    "eslint": "^9.37.0",
-    "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "prettier": "^3.6.2",
-    "semantic-release": "^24.2.9",
-    "stats.js": "^0.17.0"
+    "pnpm": "^10.22.0",
+    "turbo": "^2.6.1"
   },
-  "dependencies": {
-    "@primeuix/themes": "^1.2.5",
-    "axios": "^1.13.2",
-    "babylonjs": "^8.31.3",
-    "babylonjs-gui": "^8.31.3",
-    "babylonjs-loaders": "^8.33.4",
-    "pinia": "^3.0.3",
-    "primevue": "^4.4.1",
-    "process": "^0.11.10",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.9",
-    "vue": "^3.5.22",
-    "vue-router": "^4.6.3",
-    "vue-tsc": "^3.1.1"
-  }
+  "packageManager": "pnpm@10.5.2"
 }
