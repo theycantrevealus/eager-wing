@@ -1,4 +1,4 @@
-import type { CharacterAttribute } from "__&types/Character"
+import type { CharacterAttribute } from "#types/Character"
 
 export const LAB_CHARACTER: Map<
   string,

@@ -1,4 +1,4 @@
-import type { Matrix } from "__&types/Matrix"
+import type { Matrix } from "#types/Matrix"
 import * as BABYLON from "babylonjs"
 
 export class __Camera__ {

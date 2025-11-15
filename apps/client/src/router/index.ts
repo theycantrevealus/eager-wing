@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
-import Builder from "__&vite/components/Builder.vue"
-import CharacterCreation from "__&vite/components/Character.Creation.vue"
-import LabControl from "__&vite/components/Lab.Control.vue"
-import LabAsset from "__&vite/components/Lab.Asset.vue"
+import Builder from "#vite/components/Builder.vue"
+import CharacterCreation from "#vite/components/Character.Creation.vue"
+import LabControl from "#vite/components/Lab.Control.vue"
+import LabAsset from "#vite/components/Lab.Asset.vue"
 
 const routes: Array<RouteRecordRaw> = [
   {

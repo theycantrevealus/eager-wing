@@ -2,7 +2,8 @@
   "name": "eager-wing",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "server:start": "turbo run server:start --parallel",
+    "client:dev": "turbo run client:dev --parallel",
     "build": "turbo run build",
     "preview": "turbo run preview",
     "test": "turbo run test",

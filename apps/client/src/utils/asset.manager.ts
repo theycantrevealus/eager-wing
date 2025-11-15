@@ -1,5 +1,5 @@
 import * as BABYLON from "babylonjs"
-import { Result, Success, Failure } from "__&utils/result.pattern"
+import { Result, Success, Failure } from "#utils/result.pattern"
 
 /**
  * @fileoverview Handles shared BabylonJS asset loading and caching.

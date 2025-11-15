@@ -2,11 +2,11 @@ import * as BABYLON from "babylonjs"
 import type {
   CharacterAttribute,
   CharacterBoneCollection,
-} from "__&types/Character"
-import { EagerWing___Label } from "__&GL/label"
-import type { KeyState } from "__&interfaces/keyboard"
-import { MESH_NAME } from "__&constants/map.mesh"
-import { SKELETON_MAP } from "__&constants/map.skeleton"
+} from "#types/Character"
+import { EagerWing___Label } from "#GL/label"
+import type { KeyState } from "#interfaces/keyboard"
+import { MESH_NAME } from "#constants/map.mesh"
+import { SKELETON_MAP } from "#constants/map.skeleton"
 
 /**
  * Character Management

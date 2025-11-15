@@ -1,7 +1,7 @@
 import type {
   CharacterAttribute,
   CharacterBoneCollection,
-} from "__&types/Character"
+} from "#types/Character"
 import { defineStore } from "pinia"
 
 export const useCharacterCreationStore = defineStore("creation", {

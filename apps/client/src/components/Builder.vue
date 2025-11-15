@@ -9,8 +9,8 @@
 </template>
 <script lang="ts">
 import { defineComponent } from "vue"
-import pointerCur from "@assets/cursor/normal.cur"
-import linkCur from "@assets/cursor/link.cur"
+import pointerCur from "#assets/cursor/normal.cur"
+import linkCur from "#assets/cursor/link.cur"
 
 export default defineComponent({
   name: "Builder",

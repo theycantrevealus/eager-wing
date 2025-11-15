@@ -1,6 +1,6 @@
 <template>
   <div id="characterCreation-topPanel">
-    <img src="@assets/logo.png" />
+    <img src="#assets/logo.png" />
     <div class="game-info">
       <h1>Eager Wing</h1>
       <label>v.1.2.0</label>

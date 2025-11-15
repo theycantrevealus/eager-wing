@@ -114,7 +114,7 @@ export default defineComponent({
   },
   emits: ["change-skin-tone", "change-hair-dye"],
   created() {
-    this.images = import.meta.glob("@assets/clothes/*", {
+    this.images = import.meta.glob("#assets/clothes/*", {
       eager: true,
     }) as Record<string, unknown>
   },

@@ -5,15 +5,15 @@
 
 import * as BABYLON from "babylonjs"
 import Stats from "stats.js"
-import { EagerWing___CameraAction } from "__&GL/camera/action"
-import type { CharacterAttribute } from "__&types/Character"
-import { EagerWing___AssetManager } from "__&utils/asset.manager"
-import { EagerWing___Character } from "__&GL/character"
-import type { KeyState } from "__&interfaces/keyboard"
-import { EagerWing___Map } from "__&GL/map"
-import type { LogStore } from "__&stores/utils/log"
-import { HttpClient } from "__&utils/axios"
-import { Tile } from "__&interfaces/map.config"
+import { EagerWing___CameraAction } from "#GL/camera/action"
+import type { CharacterAttribute } from "#types/Character"
+import { EagerWing___AssetManager } from "#utils/asset.manager"
+import { EagerWing___Character } from "#GL/character"
+import type { KeyState } from "#interfaces/keyboard"
+import { EagerWing___Map } from "#GL/map"
+import type { LogStore } from "#stores/utils/log"
+import { HttpClient } from "#utils/axios"
+import { Tile } from "#interfaces/map.config"
 
 /**
  * This is lab renderer to develop basic character control module
