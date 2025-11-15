@@ -12,6 +12,9 @@
     "server:start": {
       "cache": false,
       "persistent": true
-    }
+    },
+    "preview": {},
+    "lint": {},
+    "test": {}
   }
 }
