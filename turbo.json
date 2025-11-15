@@ -9,7 +9,7 @@
       "cache": false,
       "persistent": true
     },
-    "server:start": {
+    "server:webpack:@gateway-core": {
       "cache": false,
       "persistent": true
     },

@@ -2,20 +2,20 @@
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
   "monorepo": true,
-  "root": "",
-  "sourceRoot": "src",
-  "entryFile": "main",
-  "language": "ts",
-  "generateOptions": {
-    "spec": false
-  },
   "compilerOptions": {
-    "manualRestart": true,
-    "tsConfigPath": "./tsconfig.build.json",
-    "webpack": false,
     "deleteOutDir": true,
-    "assets": [],
-    "watchAssets": false,
-    "plugins": []
+    "webpack": true,
+    "tsConfigPath": "tsconfig.json"
+  },
+  "projects": {
+    "@gateway-core": {
+      "type": "application",
+      "root": "apps/@gateway-core",
+      "entryFile": "main",
+      "sourceRoot": "apps/@gateway-core/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/@gateway-core/tsconfig.app.json"
+      }
+    }
   }
 }

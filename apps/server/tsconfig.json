@@ -13,6 +13,13 @@
     "outDir": "./dist",
     "rootDir": "./",
     "skipLibCheck": true,
-    "incremental": true
+    "incremental": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "resolveJsonModule": true,
+    "paths": {
+      "@config/*": ["./apps/config/"]
+    }
   }
 }

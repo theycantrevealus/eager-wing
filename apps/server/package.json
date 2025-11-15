@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "main": "dist/src/main",
   "scripts": {
-    "server:build": "nest build",
-    "server:start": "nest start",
-    "server:start:dev": "nest start --watch",
-    "server:start:prod": "node ."
+    "server:webpack:@gateway-core": "nest build @gateway-core --webpack --webpackPath ./webpack.config.js --watch"
   },
   "keywords": [],
   "author": "",
@@ -18,8 +14,16 @@
     "@nestjs/common": "^11.1.9",
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-express": "^11.1.9",
+    "copy-webpack-plugin": "^13.0.1",
+    "css-loader": "^7.1.2",
     "prettier": "^3.6.2",
-    "reflect-metadata": "0.2"
+    "reflect-metadata": "0.2",
+    "run-script-webpack-plugin": "^0.2.3",
+    "ts-loader": "^9.5.4",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-node-externals": "^3.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
