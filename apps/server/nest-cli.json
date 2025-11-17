@@ -16,6 +16,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/@gateway-core/tsconfig.app.json"
       }
+    },
+    "@gateway-admin": {
+      "type": "application",
+      "root": "apps/@gateway-admin",
+      "entryFile": "main",
+      "sourceRoot": "apps/@gateway-admin/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/@gateway-admin/tsconfig.app.json"
+      }
     }
   }
 }

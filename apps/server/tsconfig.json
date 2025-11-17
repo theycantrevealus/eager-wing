@@ -1,5 +1,7 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -7,6 +9,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
+    "strictPropertyInitialization": false,
     "target": "ES2024",
     "strictNullChecks": true,
     "sourceMap": true,
@@ -19,7 +22,16 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true,
     "paths": {
-      "@config/*": ["./apps/config/"]
+      "@constants/*": ["./apps/constants/*"],
+      "@configs/*": ["./apps/config/*"],
+      "@interfaces/*": ["./apps/interfaces/*"],
+      "@decorators/*": ["./apps/decorators/*"],
+      "@filters/*": ["./apps/filters/*"],
+      "@interceptors/*": ["./apps/interceptors/*"],
+      "@mocks/*": ["./apps/mocks/*"],
+      "@pipes/*": ["./apps/pipes/*"],
+      "@schemas/*": ["./apps/schemas/*"],
+      "@utilities/*": ["./apps/utilities/*"]
     }
   }
 }
