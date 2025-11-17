@@ -32,6 +32,8 @@ export class EagerWing___Character {
   /** Character attribute contains information, render rule, style, init position, etc. */
   private characterAttribute: CharacterAttribute
 
+  private isEnemy: boolean = true
+
   private characterSharedAsset: BABYLON.AssetContainer
 
   /** Registered humanoid bones formatted with humanly name */
@@ -110,6 +112,15 @@ export class EagerWing___Character {
     this.characterSharedAsset = characterSharedAsset
   }
 
+  public removeHighlight(nodeName: string, hl: BABYLON.HighlightLayer) {
+    const node = this.scene.getTransformNodeByName(nodeName)
+    if (!node) return
+
+    node.getChildMeshes().forEach((mesh) => {
+      if (mesh instanceof BABYLON.Mesh) hl.removeMesh(mesh)
+    })
+  }
+
   /**
    * @protected
    * Character model initiate from shared asset
@@ -121,10 +132,18 @@ export class EagerWing___Character {
    *
    * @returns
    */
-  public createCharacter(): {
+  public createCharacter(
+    isEnemy: boolean = true,
+    objectEvent: any,
+  ): {
     root: BABYLON.TransformNode
     getAnimationGroup: Record<string, BABYLON.AnimationGroup>
+    collider: BABYLON.Mesh
+    indicator: {
+      circle: BABYLON.Mesh
+    }
   } {
+    this.isEnemy = isEnemy
     const assetContainer = this.characterSharedAsset
     const position = new BABYLON.Vector3(
       this.characterAttribute.position.x,
@@ -141,12 +160,84 @@ export class EagerWing___Character {
         (name) => name + "_instance_" + this.characterAttribute.modelId,
       )
 
-    const root = new BABYLON.TransformNode("root_" + Math.random(), this.scene)
+    // const root = new BABYLON.TransformNode(
+    //   `root_${this.characterAttribute.modelId}_${Math.random()}`,
+    //   this.scene,
+    // )
+
+    const root = new BABYLON.TransformNode(
+      `root_${this.characterAttribute.modelId}`,
+      this.scene,
+    )
     root.position.copyFrom(position)
 
     for (const node of rootNodes) {
       node.parent = root
     }
+
+    const collider = BABYLON.MeshBuilder.CreateBox(
+      `${root.name}_collider`,
+      { size: 1, height: 4 },
+      this.scene,
+    )
+
+    const circle = BABYLON.MeshBuilder.CreateDisc(
+      `indicator_${this.characterAttribute.modelId}`,
+      {
+        radius: 0.6,
+        tessellation: 32,
+      },
+      this.scene,
+    )
+
+    circle.parent = root
+    circle.rotation.x = Math.PI / 2
+    circle.position.y = -root.getHierarchyBoundingVectors().min.y + 0.005
+    circle.isVisible = false
+    circle.visibility = 0
+
+    const circleMat = new BABYLON.StandardMaterial(
+      `indicatorMat_${this.characterAttribute.modelId}`,
+      this.scene,
+    )
+    circleMat.alpha = 0
+    circleMat.backFaceCulling = false
+    circle.material = circleMat
+
+    collider.parent = root
+    collider.isPickable = false
+    collider.isVisible = true
+    collider.visibility = 0
+    collider.actionManager = new BABYLON.ActionManager(this.scene)
+    collider.actionManager.registerAction(
+      new BABYLON.ExecuteCodeAction(
+        BABYLON.ActionManager.OnPickTrigger,
+        objectEvent,
+      ),
+    )
+    // collider.actionManager.registerAction(
+    //   new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => {
+    //     const tNode = this.scene.getMeshByName(
+    //       `indicator_${this.characterAttribute.modelId}`,
+    //     )
+
+    //     if (tNode) {
+    //       if (tNode instanceof BABYLON.Mesh) {
+    //         const hl = new BABYLON.HighlightLayer(
+    //           `hl_${this.characterAttribute.modelId}`,
+    //           this.scene,
+    //         )
+
+    //         hl.addMesh(
+    //           tNode,
+    //           this.isEnemy
+    //             ? new BABYLON.Color3(1, 0, 0)
+    //             : new BABYLON.Color3(1, 1, 0),
+    //         )
+    //       }
+    //     }
+    //   }),
+    // )
 
     const getAnimationGroup: Record<string, BABYLON.AnimationGroup> = {}
 
@@ -175,7 +266,14 @@ export class EagerWing___Character {
       `UnArmed-Idle_instance_${this.characterAttribute.modelId}`,
     )
 
-    return { root, getAnimationGroup }
+    return {
+      root,
+      getAnimationGroup,
+      collider,
+      indicator: {
+        circle,
+      },
+    }
   }
 
   /**
@@ -241,6 +339,7 @@ export class EagerWing___Character {
     modelID: string,
     key: KeyState,
     camera: BABYLON.ArcRotateCamera,
+    allowMovement: boolean = false,
   ): void {
     if (!rootInstance || !camera) return
 
@@ -264,51 +363,55 @@ export class EagerWing___Character {
 
     /** ---------------------------------------------------------------------- movement */
     let useSpeed = this.characterAttribute.speed
-    if (w) {
-      moveDir.addInPlace(camForward)
-      nextAnimName = this.combatMode
-        ? `Armed-RunForward_instance_${modelID}`
-        : `Unarmed-RunForward_instance_${modelID}`
-      useSpeed = this.combatMode ? this.runSpeed : this.characterAttribute.speed
-    }
-    if (s) {
-      moveDir.subtractInPlace(camForward)
-      nextAnimName = this.combatMode
-        ? `Armed-WalkBack_instance_${modelID}`
-        : `Unarmed-Backward_instance_${modelID}`
-      useSpeed = this.combatMode
-        ? this.characterAttribute.speed
-        : this.sideSpeed
-    }
-    if (a) {
-      moveDir.subtractInPlace(camRight)
-      nextAnimName = this.combatMode
-        ? `Armed-WalkLeft_instance_${modelID}`
-        : `Unarmed-StrafeLeft_instance_${modelID}`
-      useSpeed = this.combatMode
-        ? this.characterAttribute.speed
-        : this.sideSpeed
-    }
-    if (d) {
-      moveDir.addInPlace(camRight)
-      nextAnimName = this.combatMode
-        ? `Armed-WalkRight_instance_${modelID}`
-        : `Unarmed-StrafeRight_instance_${modelID}`
-      useSpeed = this.combatMode
-        ? this.characterAttribute.speed
-        : this.sideSpeed
-    }
+    if (allowMovement) {
+      if (w) {
+        moveDir.addInPlace(camForward)
+        nextAnimName = this.combatMode
+          ? `Armed-RunForward_instance_${modelID}`
+          : `Unarmed-RunForward_instance_${modelID}`
+        useSpeed = this.combatMode
+          ? this.runSpeed
+          : this.characterAttribute.speed
+      }
+      if (s) {
+        moveDir.subtractInPlace(camForward)
+        nextAnimName = this.combatMode
+          ? `Armed-WalkBack_instance_${modelID}`
+          : `Unarmed-Backward_instance_${modelID}`
+        useSpeed = this.combatMode
+          ? this.characterAttribute.speed
+          : this.sideSpeed
+      }
+      if (a) {
+        moveDir.subtractInPlace(camRight)
+        nextAnimName = this.combatMode
+          ? `Armed-WalkLeft_instance_${modelID}`
+          : `Unarmed-StrafeLeft_instance_${modelID}`
+        useSpeed = this.combatMode
+          ? this.characterAttribute.speed
+          : this.sideSpeed
+      }
+      if (d) {
+        moveDir.addInPlace(camRight)
+        nextAnimName = this.combatMode
+          ? `Armed-WalkRight_instance_${modelID}`
+          : `Unarmed-StrafeRight_instance_${modelID}`
+        useSpeed = this.combatMode
+          ? this.characterAttribute.speed
+          : this.sideSpeed
+      }
 
-    if (moving) {
-      moveDir.normalize()
-      rootInstance.position.addInPlace(moveDir.scale(useSpeed))
+      if (moving) {
+        moveDir.normalize()
+        rootInstance.position.addInPlace(moveDir.scale(useSpeed))
 
-      const camFacing = Math.atan2(camForward.x, camForward.z)
-      rootInstance.rotation.y = BABYLON.Scalar.Lerp(
-        rootInstance.rotation.y,
-        camFacing,
-        this.characterAttribute.turnSpeed,
-      )
+        const camFacing = Math.atan2(camForward.x, camForward.z)
+        rootInstance.rotation.y = BABYLON.Scalar.Lerp(
+          rootInstance.rotation.y,
+          camFacing,
+          this.characterAttribute.turnSpeed,
+        )
+      }
     }
 
     /** ---------------------------------------------------------------------- jump */
@@ -410,10 +513,11 @@ export class EagerWing___Character {
     }
     /** ---------------------------------------------------------------------- end of jump */
 
-    camera.target = rootInstance.position.add(new BABYLON.Vector3(0, 1, 0))
+    if (allowMovement)
+      camera.target = rootInstance.position.add(new BABYLON.Vector3(0, 1, 0))
 
     /** ---------------------------------------------------------------------- animation */
-    if (this.currentAnimName !== nextAnimName) {
+    if (this.currentAnimName !== nextAnimName && allowMovement) {
       this.playAnimation(animationGroup, nextAnimName)
     }
   }

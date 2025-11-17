@@ -13,6 +13,10 @@
       "cache": false,
       "persistent": true
     },
+    "server:webpack:@gateway-admin": {
+      "cache": false,
+      "persistent": true
+    },
     "preview": {},
     "lint": {},
     "test": {}
