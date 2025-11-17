@@ -10,9 +10,9 @@
     "test": "jest --passWithNoTests",
     "release": "pnpm dlx semantic-release",
     "prepare": "husky",
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "client:dev": "vite",
+    "client:build": "vue-tsc -b && vite build",
+    "client:preview": "vite preview"
   },
   "config": {
     "commitizen": {
@@ -40,22 +40,22 @@
     "url": "https://github.com/theycantrevealus/eager-wing/issues"
   },
   "imports": {
-    "__&types/*": [
+    "#types/*": [
       "./src/types/*"
     ],
-    "__&stores/*": [
+    "#stores/*": [
       "./src/stores/*"
     ],
-    "__&interfaces/*": [
+    "#interfaces/*": [
       "./src/interfaces/*"
     ],
-    "__&constants/*": [
+    "#constants/*": [
       "./src/constants/*"
     ],
-    "__&utils/*": [
+    "#utils/*": [
       "./src/utils/*"
     ],
-    "__&GL/*": [
+    "#GL/*": [
       "./src/gl/*"
     ]
   },

@@ -4,12 +4,12 @@ import Stats from "stats.js"
 import { createApp } from "vue"
 import { createPinia } from "pinia"
 // import "./style.css"
-import type { CharacterAttribute } from "__&types/Character"
-import { __Map__ } from "__&GL/map"
-import type { KeyState } from "__&interfaces/keyboard"
-import { __Camera__ } from "__&GL/camera"
-import { __Character__ } from "__&GL/character"
-import CharacterTarget from "__&vite/components/Character.Target.vue"
+import type { CharacterAttribute } from "#types/Character"
+import { __Map__ } from "#GL/map"
+import type { KeyState } from "#interfaces/keyboard"
+import { __Camera__ } from "#GL/camera"
+import { __Character__ } from "#GL/character"
+import CharacterTarget from "#vite/components/Character.Target.vue"
 
 export class __Core__ {
   private scene: BABYLON.Scene

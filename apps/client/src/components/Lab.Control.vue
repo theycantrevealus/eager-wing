@@ -46,11 +46,11 @@
   </div>
 </template>
 <script lang="ts">
-import { LAB_CHARACTER } from "__&constants/lab.character"
-import { KEYBOARD_MAP } from "__&constants/map.keyboard"
-import { PANEL } from "__&constants/panel"
-import { EagerWing___LabControl } from "__&GL/render/lab.control"
-import type { Panel } from "__&types/Panel"
+import { LAB_CHARACTER } from "#constants/lab.character"
+import { KEYBOARD_MAP } from "#constants/map.keyboard"
+import { PANEL } from "#constants/panel"
+import { EagerWing___LabControl } from "#GL/render/lab.control"
+import type { Panel } from "#types/Panel"
 import { defineAsyncComponent, defineComponent, markRaw } from "vue"
 import { useLogStore } from "../stores/utils/log"
 
@@ -117,7 +117,7 @@ export default defineComponent({
     asyncPanel(target: string) {
       if (!this.asyncCache.has(target)) {
         const rawAsyncComponent = defineAsyncComponent(
-          () => import(`__&vite/components/panel/Utils/${target}.vue`),
+          () => import(`#vite/components/panel/Utils/${target}.vue`),
         )
         // 👇 mark it raw before storing inside reactive Map
         this.asyncCache.set(target, markRaw(rawAsyncComponent))

@@ -82,7 +82,7 @@ import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
 import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
-import { useLogStore } from "__&stores/utils/log"
+import { useLogStore } from "#stores/utils/log"
 
 export default defineComponent({
   name: "PanelChat",

@@ -2,13 +2,12 @@ import * as BABYLON from "babylonjs"
 import * as GUI from "babylonjs-gui"
 import "babylonjs-loaders"
 import Stats from "stats.js"
-import type { CharacterAttribute } from "__&types/Character"
-import { EagerWing___CameraCreation } from "__&GL/camera/creation"
-import { EagerWing___Character } from "__&GL/character"
-import { EagerWing___AssetManager } from "../../utils/asset.manager"
-import type { StoreDefinition } from "pinia"
-import type { CharacterCreationStore } from "../../stores/creation"
-import { SKELETON_MAP } from "__&constants/map.skeleton"
+import type { CharacterAttribute } from "#types/Character"
+import { EagerWing___CameraCreation } from "#GL/camera/creation"
+import { EagerWing___Character } from "#GL/character"
+import { SKELETON_MAP } from "#constants/map.skeleton"
+import { CharacterCreationStore } from "#stores/creation.ts"
+import { EagerWing___AssetManager } from "#utils/asset.manager.ts"
 
 /**
  * @fileoverview Character creation module.
@@ -145,7 +144,7 @@ export class EagerWing___CharacterCreation {
     if (characterAsset) this.GLTFCharacter = characterAsset
 
     if (this.GLTFCharacter) {
-      this.characterInstance = new EagerWing___Character(
+      this.characterInstance = new EagerWing___CharacterCreation(
         this.scene,
         this.GLTFCharacter,
         characterAttribute,

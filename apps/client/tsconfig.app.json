@@ -8,13 +8,13 @@
     "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": true,
     "paths": {
-      "__&types/*": ["./src/types/*"],
-      "__&stores/*": ["./src/stores/*"],
-      "__&constants/*": ["./src/constants/*"],
-      "__&interfaces/*": ["./src/interfaces/*"],
-      "__&utils/*": ["./src/utils/*"],
-      "__&GL/*": ["./src/gl/*"],
-      "__&vite/components/*": ["./src/components/*"]
+      "#types/*": ["./src/types/*"],
+      "#stores/*": ["./src/stores/*"],
+      "#constants/*": ["./src/constants/*"],
+      "#interfaces/*": ["./src/interfaces/*"],
+      "#utils/*": ["./src/utils/*"],
+      "#GL/*": ["./src/gl/*"],
+      "#vite/components/*": ["./src/components/*"]
     },
 
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",

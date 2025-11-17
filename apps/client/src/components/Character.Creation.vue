@@ -24,13 +24,13 @@
   </div>
 </template>
 <script lang="ts">
-import { EagerWing___CharacterCreation } from "__&GL/render/character.creation"
+import { EagerWing___CharacterCreation } from "#GL/render/character.creation"
 import type {
   CharacterAttribute,
   CharacterBoneCollection,
-} from "__&types/Character"
-import TopPanel from "__&vite/components/panel/Character.Creation/Panel.Top.vue"
-import LeftPanel from "__&vite/components/panel/Character.Creation/Panel.Left.vue"
+} from "#types/Character"
+import TopPanel from "#vite/components/panel/Character.Creation/Panel.Top.vue"
+import LeftPanel from "#vite/components/panel/Character.Creation/Panel.Left.vue"
 import { defineComponent, markRaw } from "vue"
 import { useCharacterCreationStore } from "../stores/creation"
 import { mapState } from "pinia"

@@ -5,15 +5,15 @@
 
 import * as BABYLON from "babylonjs"
 import Stats from "stats.js"
-import { EagerWing___CameraAction } from "__&GL/camera/action"
-import type { CharacterAttribute } from "__&types/Character"
-import { EagerWing___AssetManager } from "__&utils/asset.manager"
-import { EagerWing___Character } from "__&GL/character"
-import type { KeyState } from "__&interfaces/keyboard"
-import { EagerWing___Map } from "__&GL/map"
-import type { LogStore } from "__&stores/utils/log"
-import { HttpClient } from "__&utils/axios"
-import { Tile } from "__&interfaces/map.config"
+import { EagerWing___CameraAction } from "#GL/camera/action"
+import type { CharacterAttribute } from "#types/Character"
+import { EagerWing___AssetManager } from "#utils/asset.manager"
+import { EagerWing___Character } from "#GL/character"
+import type { KeyState } from "#interfaces/keyboard"
+import { EagerWing___Map } from "#GL/map"
+import type { LogStore } from "#stores/utils/log"
+import { HttpClient } from "#utils/axios"
+import { Tile } from "#interfaces/map.config"
 
 /**
  * This is lab renderer to develop basic character control module
@@ -56,6 +56,9 @@ export class EagerWing___LabControl {
   /** Stat intance. */
   private stats: Stats
 
+  /** ATTRIBUTE */
+  private INTERACT_RADIUS: number = 20
+
   /** Raw character attribute. */
   private characterAttribute: Map<
     string,
@@ -72,8 +75,14 @@ export class EagerWing___LabControl {
       instance: EagerWing___Character
       root: BABYLON.TransformNode
       getAnimationGroup: Record<string, BABYLON.AnimationGroup>
+      collider: BABYLON.Mesh
+      indicator: {
+        circle: BABYLON.Mesh
+      }
     }
   > = new Map()
+
+  private hl: BABYLON.HighlightLayer
 
   /** Allowed key */
   private keyboardKey: KeyState = {
@@ -88,9 +97,9 @@ export class EagerWing___LabControl {
    * Character Control Lab
    * Use it for development purposes only
    *
-   * @param { LogStore } chatStore - Pinia chat store
+   * @param { LogStore } logStore - Pinia chat store
    * @param { HTMLCanvasElement } canvas - Canvas used for load animation
-   * @param { CharacterAttribute } - characterAttribute - Init character configuration
+   * @param { CharacterAttribute } characterAttribute - Init character configuration
    */
   constructor(
     logStore: LogStore,
@@ -126,6 +135,7 @@ export class EagerWing___LabControl {
 
     this.logStore = logStore
     this.characterAttribute = characterAttribute
+
     /** Configure the canvas */
     canvas.style.width = "100%"
     canvas.style.height = "100%"
@@ -169,6 +179,8 @@ export class EagerWing___LabControl {
     this.shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight)
     this.shadowGenerator.useBlurExponentialShadowMap = true
     this.shadowGenerator.blurKernel = 32
+
+    this.hl = new BABYLON.HighlightLayer(`global_hl`, this.scene)
 
     this.stats = new Stats()
     this.stats.showPanel(0)
@@ -221,29 +233,45 @@ export class EagerWing___LabControl {
   animate(): void {
     this.renderLoopCallback = () => {
       this.stats.begin()
+      const mainPlayer = this.characterInstances.get("mainPlayer")
       // @ts-ignore
       this.characterInstances.forEach((value, key) => {
         const allowMovement =
           this.characterAttribute.get(key)?.allowMovement ?? false
-        if (allowMovement) {
-          const characterInstance = this.characterInstances.get(key)
-          if (characterInstance && characterInstance.root) {
-            characterInstance.instance.update(
-              characterInstance.root,
-              characterInstance.getAnimationGroup,
-              "001",
-              this.keyboardKey,
-              this.cameraActionManager.getCamera(),
+
+        const characterInstance = this.characterInstances.get(key)
+        if (characterInstance && characterInstance.root) {
+          characterInstance.instance.update(
+            characterInstance.root,
+            characterInstance.getAnimationGroup,
+            "001",
+            this.keyboardKey,
+            this.cameraActionManager.getCamera(),
+            allowMovement,
+          )
+
+          if (mainPlayer) {
+            const dist = BABYLON.Vector3.Distance(
+              mainPlayer?.root.position,
+              characterInstance?.root.getAbsolutePosition(),
             )
+
+            if (key !== "mainPlayer") {
+              characterInstance.collider.isPickable =
+                dist <= this.INTERACT_RADIUS
+              characterInstance.indicator.circle.isVisible = true
+              characterInstance.indicator.circle.visibility = 1
+            }
           }
         }
       })
 
       /** Update map character */
-      const mainPlayer = this.characterInstances.get("mainPlayer")
+
       if (this.mapManager && !this.mapManager.getPlayer() && mainPlayer) {
         this.mapManager.updateTiles()
       }
+
       if (this.scene) this.scene.render()
       this.stats.end()
     }
@@ -377,12 +405,44 @@ export class EagerWing___LabControl {
           attribute,
         )
 
-        const { root, getAnimationGroup } = characterInstance.createCharacter()
+        /** Build interaction meta */
+        const isEnemy =
+          attributeList.get("mainPlayer")?.attribute.information.race !=
+          attribute.information.race
+
+        this.logStore.addMessage({
+          type: "info",
+          content: `Checking ${attributeList.get("mainPlayer")?.attribute.information.race} with ${attribute.information.race} ${isEnemy}`,
+        })
+
+        const { root, getAnimationGroup, collider, indicator } =
+          characterInstance.createCharacter(isEnemy, () => {
+            if (this.hl) {
+              this.hl.removeAllMeshes()
+            }
+
+            const tNode = this.scene.getMeshByName(
+              `indicator_${attribute.modelId}`,
+            )
+
+            if (tNode) {
+              if (tNode instanceof BABYLON.Mesh) {
+                this.hl.addMesh(
+                  tNode,
+                  isEnemy
+                    ? new BABYLON.Color3(1, 0, 0)
+                    : new BABYLON.Color3(1, 1, 0),
+                )
+              }
+            }
+          })
 
         this.characterInstances?.set(key, {
           instance: characterInstance,
           root,
           getAnimationGroup,
+          collider,
+          indicator,
         })
       }
     })

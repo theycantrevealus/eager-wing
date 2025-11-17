@@ -2,7 +2,9 @@
   "name": "eager-wing",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "server:webpack:@gateway-core": "turbo run server:webpack:@gateway-core --parallel",
+    "server:webpack:@gateway-admin": "turbo run server:webpack:@gateway-admin --parallel",
+    "client:dev": "turbo run client:dev --parallel",
     "build": "turbo run build",
     "preview": "turbo run preview",
     "test": "turbo run test",

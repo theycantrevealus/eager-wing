@@ -1,4 +1,4 @@
-import type { Panel } from "__&types/Panel"
+import type { Panel } from "#types/Panel"
 
 export const PANEL: Panel[] = [
   {

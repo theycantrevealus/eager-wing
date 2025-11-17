@@ -2,8 +2,8 @@ import type {
   MapConfig,
   MapValidationError,
   Tile,
-} from "__&interfaces/map.config"
-import type { LogStore } from "__&stores/utils/log"
+} from "#interfaces/map.config"
+import type { LogStore } from "#stores/utils/log"
 import * as BABYLON from "babylonjs"
 
 export class EagerWing___Map {

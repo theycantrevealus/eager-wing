@@ -3,9 +3,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".vite/**"]
+      "outputs": ["dist/**", ".vite/**", ".nest/**"]
     },
-    "dev": {
+    "client:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "server:webpack:@gateway-core": {
+      "cache": false,
+      "persistent": true
+    },
+    "server:webpack:@gateway-admin": {
       "cache": false,
       "persistent": true
     },

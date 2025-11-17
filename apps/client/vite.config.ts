@@ -7,14 +7,14 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      "@assets": path.resolve(__dirname, "src/assets"),
-      "__&types": path.resolve(__dirname, "src/types"),
-      "__&stores": path.resolve(__dirname, "src/stores"),
-      "__&interfaces": path.resolve(__dirname, "src/interfaces"),
-      "__&constants": path.resolve(__dirname, "src/constants"),
-      "__&utils": path.resolve(__dirname, "src/utils"),
-      "__&GL": path.resolve(__dirname, "src/gl"),
-      "__&vite/components": path.resolve(__dirname, "src/components"),
+      "#assets": path.resolve(__dirname, "src/assets"),
+      "#types": path.resolve(__dirname, "src/types"),
+      "#stores": path.resolve(__dirname, "src/stores"),
+      "#interfaces": path.resolve(__dirname, "src/interfaces"),
+      "#constants": path.resolve(__dirname, "src/constants"),
+      "#utils": path.resolve(__dirname, "src/utils"),
+      "#GL": path.resolve(__dirname, "src/gl"),
+      "#vite/components": path.resolve(__dirname, "src/components"),
     },
   },
 })

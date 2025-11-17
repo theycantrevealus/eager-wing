@@ -1,5 +1,5 @@
 // src/stores/character.ts
-import type { CharacterAttribute } from "__&types/Character"
+import type { CharacterAttribute } from "#types/Character"
 import { defineStore } from "pinia"
 
 export const useCharacterStore = defineStore("character", {
