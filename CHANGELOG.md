@@ -1,3 +1,16 @@
+# [2.1.0](https://github.com/theycantrevealus/eager-wing/compare/v2.0.0...v2.1.0) (2025-11-17)
+
+
+### Bug Fixes
+
+* missing test command on root project ([a5216c8](https://github.com/theycantrevealus/eager-wing/commit/a5216c8884ffc128ec154b2995a47f283b93084f))
+
+
+### Features
+
+* object selection indicator logic ([168fa90](https://github.com/theycantrevealus/eager-wing/commit/168fa9014a6b532d26e115fc6e919dfc124221b5))
+* preparation of backend service ([a35ce99](https://github.com/theycantrevealus/eager-wing/commit/a35ce9937f20b32df1dee83e7d67885aa6c105ac))
+
 # [2.0.0](https://github.com/theycantrevealus/eager-wing/compare/v1.3.3...v2.0.0) (2025-11-14)
 
 
