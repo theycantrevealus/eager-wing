@@ -1,7 +1,7 @@
 <template>
   <div id="character_target_container" v-if="characterTarget !== null">
     <img
-      v-bind:src="`${import.meta.env.VITE_SERVER_ASSET}/assets/class.${characterTarget.information.job}.webp`"
+      :src="`${assetUrl}/assets/class.${characterTarget.information.job}.webp`"
       id="character_target_class_icon"
     />
     <label id="character_target_level">{{
@@ -25,6 +25,8 @@ export default defineComponent({
   data() {
     return {
       characterStore: markRaw(useCharacterStore()),
+
+      assetUrl: import.meta.env.VITE_SERVER_ASSET,
     }
   },
   computed: {
