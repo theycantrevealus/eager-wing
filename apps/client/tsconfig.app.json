@@ -1,0 +1,34 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    /* Custom */
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "verbatimModuleSyntax": false,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "#types/*": ["./src/types/*"],
+      "#stores/*": ["./src/stores/*"],
+      "#constants/*": ["./src/constants/*"],
+      "#interfaces/*": ["./src/interfaces/*"],
+      "#utils/*": ["./src/utils/*"],
+      "#GL/*": ["./src/gl/*"],
+      "#vite/components/*": ["./src/components/*"]
+    },
+
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types"],
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "vite-env.d.ts"]
+}

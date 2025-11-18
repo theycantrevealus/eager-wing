@@ -1,3 +1,52 @@
+# [2.2.0](https://github.com/theycantrevealus/eager-wing/compare/v2.1.0...v2.2.0) (2025-11-18)
+
+
+### Features
+
+* interaction with selected object player ([d2362cb](https://github.com/theycantrevealus/eager-wing/commit/d2362cb0feb6dd9dd9198acff54306f5ef036a2d))
+
+# [2.1.0](https://github.com/theycantrevealus/eager-wing/compare/v2.0.0...v2.1.0) (2025-11-17)
+
+
+### Bug Fixes
+
+* missing test command on root project ([a5216c8](https://github.com/theycantrevealus/eager-wing/commit/a5216c8884ffc128ec154b2995a47f283b93084f))
+
+
+### Features
+
+* object selection indicator logic ([168fa90](https://github.com/theycantrevealus/eager-wing/commit/168fa9014a6b532d26e115fc6e919dfc124221b5))
+* preparation of backend service ([a35ce99](https://github.com/theycantrevealus/eager-wing/commit/a35ce9937f20b32df1dee83e7d67885aa6c105ac))
+
+# [2.0.0](https://github.com/theycantrevealus/eager-wing/compare/v1.3.3...v2.0.0) (2025-11-14)
+
+
+* chore(monorepo)!: migration to monorepo structure ([d6336fa](https://github.com/theycantrevealus/eager-wing/commit/d6336facce154b96b70c345160332e5d8f3f8471))
+
+
+### BREAKING CHANGES
+
+* Preparation to add server and socket
+
+## [1.3.3](https://github.com/theycantrevealus/eager-wing/compare/v1.3.2...v1.3.3) (2025-11-12)
+
+
+### Bug Fixes
+
+* chunk logic using bisect, so the slices will not jagged between tiles ([1c529e2](https://github.com/theycantrevealus/eager-wing/commit/1c529e2d335c0340c6804b95124343926c1cdf54))
+* handle clean recycle of unused instances and event ([5b130ce](https://github.com/theycantrevealus/eager-wing/commit/5b130ce47fe779e03066989355a53d1dccb2165f))
+* performance enhancement ([de751a2](https://github.com/theycantrevealus/eager-wing/commit/de751a29e0ff66c73f947ce7d7134fddaaecf14b))
+* remove unused raycast and set it re-useable as instance on class property ([6a4754f](https://github.com/theycantrevealus/eager-wing/commit/6a4754f61544fc5dba6ebe80db10c0254ad07724))
+* trigger update tile only if radius changed instead of everytime ([4c0806e](https://github.com/theycantrevealus/eager-wing/commit/4c0806ea1f583b12cf5b3bdefc88c9d10081e437))
+
+## [1.3.2](https://github.com/theycantrevealus/eager-wing/compare/v1.3.1...v1.3.2) (2025-10-28)
+
+
+### Bug Fixes
+
+* animation between idle set smooth ([04acb9d](https://github.com/theycantrevealus/eager-wing/commit/04acb9d54798113649c14b76a1bdd233485881da))
+* instantiate character object for GPU buffer share ([ae9e596](https://github.com/theycantrevealus/eager-wing/commit/ae9e596aa5f45e628834f67a86cdf4368b497307))
+
 ## [1.3.1](https://github.com/theycantrevealus/eager-wing/compare/v1.3.0...v1.3.1) (2025-10-22)
 
 

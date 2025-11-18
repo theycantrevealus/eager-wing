@@ -1,0 +1,15 @@
+// tsconfig.base.json
+{
+  "references": [{ "path": "./apps/server" }],
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "commonjs",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  }
+}

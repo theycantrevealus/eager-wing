@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turborepo.org/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".vite/**", ".nest/**"]
+    },
+    "client:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "server:webpack:@gateway-core": {
+      "cache": false,
+      "persistent": true
+    },
+    "server:webpack:@gateway-admin": {
+      "cache": false,
+      "persistent": true
+    },
+    "preview": {},
+    "lint": {},
+    "test": {}
+  }
+}
