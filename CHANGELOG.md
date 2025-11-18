@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/theycantrevealus/eager-wing/compare/v2.1.0...v2.2.0) (2025-11-18)
+
+
+### Features
+
+* interaction with selected object player ([d2362cb](https://github.com/theycantrevealus/eager-wing/commit/d2362cb0feb6dd9dd9198acff54306f5ef036a2d))
+
 # [2.1.0](https://github.com/theycantrevealus/eager-wing/compare/v2.0.0...v2.1.0) (2025-11-17)
 
 
