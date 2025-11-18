@@ -1,0 +1,48 @@
+#character_target_container {
+  background: url("http://localhost/assets/healthbar.normal.png") no-repeat;
+  background-size: 100% 50px;
+  background-position: center;
+  position: fixed;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 50px;
+  background-color: transparent;
+  padding: 10px;
+  text-align: center;
+  z-index: 100;
+}
+
+#character_target_nickname {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  width: 100%;
+  padding-left: 20px;
+  font-size: 6pt !important;
+}
+
+#character_target_distance {
+  position: absolute;
+  right: 10px;
+  bottom: -5px;
+  font-size: 6pt !important;
+}
+
+#character_target_class_icon {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  left: 22px;
+  top: 9px;
+  border-radius: 100%;
+}
+
+#character_target_level {
+  position: absolute;
+  left: 5px;
+  top: 19px;
+  font-size: 6pt !important;
+}

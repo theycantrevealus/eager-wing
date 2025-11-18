@@ -16,12 +16,12 @@ export const LAB_CHARACTER: Map<
       attribute: {
         modelId: "001",
         information: {
-          name: "TATANG 1",
+          name: "郑贤文",
           gender: "female",
           level: 1,
           health: 100,
           mana: 100,
-          job: "warrior",
+          job: "templar",
           race: "asmodian",
           dimension: {
             scale: 1,
@@ -74,7 +74,7 @@ export const LAB_CHARACTER: Map<
           level: 1,
           health: 100,
           mana: 100,
-          job: "warrior",
+          job: "assasin",
           race: "asmodian",
           dimension: {
             scale: 0.005,
@@ -128,7 +128,7 @@ export const LAB_CHARACTER: Map<
           level: 1,
           health: 100,
           mana: 100,
-          job: "warrior",
+          job: "spiritmaster",
           race: "elyos",
           dimension: {
             scale: 0.005,

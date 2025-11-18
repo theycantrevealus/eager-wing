@@ -3,7 +3,22 @@
  * @module EagerWing___LabControl
  */
 
-import * as BABYLON from "babylonjs"
+// import * as BABYLON from "babylonjs"
+import {
+  Engine,
+  Scene,
+  ShadowGenerator,
+  HighlightLayer,
+  HemisphericLight,
+  Mesh,
+  TransformNode,
+  DirectionalLight,
+  AnimationGroup,
+  Vector3,
+  Color3,
+  Color4,
+  DracoCompression,
+} from "babylonjs"
 import Stats from "stats.js"
 import { EagerWing___CameraAction } from "#GL/camera/action"
 import type { CharacterAttribute } from "#types/Character"
@@ -14,6 +29,8 @@ import { EagerWing___Map } from "#GL/map"
 import type { LogStore } from "#stores/utils/log"
 import { HttpClient } from "#utils/axios"
 import { Tile } from "#interfaces/map.config"
+import { CharacterControlStatus } from "#interfaces/control.ts"
+import { CharacterStore } from "#stores/character.ts"
 
 /**
  * This is lab renderer to develop basic character control module
@@ -28,14 +45,46 @@ export class EagerWing___LabControl {
   /** Store */
   private logStore: LogStore
 
+  private characterStore: CharacterStore
+
   /** HTTP Client */
   private httpClient: HttpClient
 
   /** Engine renderer. */
-  private engine: BABYLON.Engine
+  private engine: Engine | null
 
   /** The active BabylonJS scene used for load. */
-  private scene: BABYLON.Scene
+  private scene: Scene | null
+
+  /** Map Manager */
+  private mapManager: EagerWing___Map | null = null
+
+  /** Asset Manager Instance. */
+  private assetManager: EagerWing___AssetManager
+
+  /** Camera Instance Manager. */
+  private cameraActionManager: EagerWing___CameraAction
+
+  /** Shadow Generator. */
+  private shadowGenerator: ShadowGenerator
+
+  /** Highlight layer. */
+  private highLightLayer: HighlightLayer
+
+  /** Stat intance. */
+  private stats: Stats
+
+  /** Module Config */
+  private INTERACT_RADIUS: number = 20
+
+  /** Raw character attribute. */
+  private characterAttribute: Map<
+    string,
+    { attribute: CharacterAttribute; object: string; allowMovement: boolean }
+  >
+
+  /** Control Status */
+  private controlStatus: CharacterControlStatus = {}
 
   /** Event instances */
   private renderLoopCallback?: () => void
@@ -45,44 +94,19 @@ export class EagerWing___LabControl {
   private boundBlurHandler?: () => void
   private isDestroyed = false
 
-  private mapManager: EagerWing___Map | null = null
-
-  /** Camera Instance Manager. */
-  private cameraActionManager: EagerWing___CameraAction
-
-  /** Shadow Generator. */
-  private shadowGenerator: BABYLON.ShadowGenerator
-
-  /** Stat intance. */
-  private stats: Stats
-
-  /** ATTRIBUTE */
-  private INTERACT_RADIUS: number = 20
-
-  /** Raw character attribute. */
-  private characterAttribute: Map<
-    string,
-    { attribute: CharacterAttribute; object: string; allowMovement: boolean }
-  >
-
-  /** Asset Manager Instance. */
-  private assetManager: EagerWing___AssetManager
-
   /** All humanoid character instances */
   private characterInstances: Map<
     string,
     {
       instance: EagerWing___Character
-      root: BABYLON.TransformNode
-      getAnimationGroup: Record<string, BABYLON.AnimationGroup>
-      collider: BABYLON.Mesh
+      root: TransformNode
+      getAnimationGroup: Record<string, AnimationGroup>
+      collider: Mesh
       indicator: {
-        circle: BABYLON.Mesh
+        circle: Mesh
       }
     }
   > = new Map()
-
-  private hl: BABYLON.HighlightLayer
 
   /** Allowed key */
   private keyboardKey: KeyState = {
@@ -103,6 +127,7 @@ export class EagerWing___LabControl {
    */
   constructor(
     logStore: LogStore,
+    characterStore: CharacterStore,
     canvas: HTMLCanvasElement,
     assetsLibrary: Map<string, string>,
     characterAttribute: Map<
@@ -110,6 +135,10 @@ export class EagerWing___LabControl {
       { attribute: CharacterAttribute; object: string; allowMovement: boolean }
     >,
   ) {
+    DracoCompression.Configuration.decoder.wasmUrl = `${import.meta.env.VITE_SERVER_DRACO}/draco_wasm_wrapper_gltf.js`
+    DracoCompression.Configuration.decoder.wasmBinaryUrl = `${import.meta.env.VITE_SERVER_DRACO}/draco_decoder_gltf.wasm`
+    DracoCompression.Configuration.decoder.fallbackUrl = `${import.meta.env.VITE_SERVER_DRACO}/draco_decoder_gltf.js`
+
     const authMiddleware = async (config: any) => {
       config.headers = {
         ...config.headers,
@@ -134,53 +163,49 @@ export class EagerWing___LabControl {
     })
 
     this.logStore = logStore
+    this.characterStore = characterStore
     this.characterAttribute = characterAttribute
 
     /** Configure the canvas */
     canvas.style.width = "100%"
     canvas.style.height = "100%"
     canvas.id = "LabControl___renderCanvas"
-    document.body.appendChild(canvas)
+    // document.body.appendChild(canvas)
 
-    this.engine = new BABYLON.Engine(canvas, true, {
+    this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
       antialias: true,
     })
 
-    this.scene = new BABYLON.Scene(this.engine)
+    this.scene = new Scene(this.engine)
 
-    this.scene.clearColor = new BABYLON.Color4(
-      0x0c / 255,
-      0x12 / 255,
-      0x28 / 255,
-      1.0,
-    )
+    this.scene.clearColor = new Color4(0x0c / 255, 0x12 / 255, 0x28 / 255, 1.0)
 
     this.cameraActionManager = new EagerWing___CameraAction(
       this.engine,
       this.scene,
     )
 
-    const light = new BABYLON.HemisphericLight(
+    const light = new HemisphericLight(
       "LabControl___hemiLight",
-      new BABYLON.Vector3(0, 1, 0),
+      new Vector3(0, 1, 0),
       this.scene,
     )
     light.intensity = 0.7
 
-    const dirLight = new BABYLON.DirectionalLight(
+    const dirLight = new DirectionalLight(
       "dirLight",
-      new BABYLON.Vector3(-1, -2, -1),
+      new Vector3(-1, -2, -1),
       this.scene,
     )
-    dirLight.position = new BABYLON.Vector3(20, 120, 20)
+    dirLight.position = new Vector3(20, 120, 20)
 
-    this.shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight)
+    this.shadowGenerator = new ShadowGenerator(1024, dirLight)
     this.shadowGenerator.useBlurExponentialShadowMap = true
     this.shadowGenerator.blurKernel = 32
 
-    this.hl = new BABYLON.HighlightLayer(`global_hl`, this.scene)
+    this.highLightLayer = new HighlightLayer(`global_hl`, this.scene)
 
     this.stats = new Stats()
     this.stats.showPanel(0)
@@ -205,20 +230,21 @@ export class EagerWing___LabControl {
       .then((manifest) => {
         manifest.match({
           success: (u) => {
-            this.mapManager = new EagerWing___Map(
-              this.logStore,
-              this.scene,
-              null,
-              {
-                name: "dessert",
-                url: `${import.meta.env.VITE_SERVER_ASSET}/chunks_lod/`,
-                manifest: u,
-                load_radius: 100,
-                load_grid_radius: 2,
-                tile_size: 408.8,
-                eps: 1e-6,
-              },
-            )
+            if (this.scene)
+              this.mapManager = new EagerWing___Map(
+                this.logStore,
+                this.scene,
+                null,
+                {
+                  name: "dessert",
+                  url: `${import.meta.env.VITE_SERVER_ASSET}/chunks_lod/`,
+                  manifest: u,
+                  load_radius: 100,
+                  load_grid_radius: 2,
+                  tile_size: 408.8,
+                  eps: 1e-6,
+                },
+              )
           },
           failure: (err) => {
             this.logStore.addMessage({
@@ -251,7 +277,7 @@ export class EagerWing___LabControl {
           )
 
           if (mainPlayer) {
-            const dist = BABYLON.Vector3.Distance(
+            const dist = Vector3.Distance(
               mainPlayer?.root.position,
               characterInstance?.root.getAbsolutePosition(),
             )
@@ -261,6 +287,10 @@ export class EagerWing___LabControl {
                 dist <= this.INTERACT_RADIUS
               characterInstance.indicator.circle.isVisible = true
               characterInstance.indicator.circle.visibility = 1
+            }
+
+            if (dist > this.INTERACT_RADIUS) {
+              this.characterStore.setTargetSelection(null)
             }
           }
         }
@@ -272,11 +302,50 @@ export class EagerWing___LabControl {
         this.mapManager.updateTiles()
       }
 
+      /** Handle object selection
+       * 1. Show indicator
+       * 2. Calculate distance
+       * 3. Check action
+       *    a. NPC - Open dialog
+       *    b. Enemy - Combat mode
+       */
+      if (this.controlStatus.selectedObject) {
+        this.characterStore.setTargetSelection(
+          this.controlStatus.selectedObject.attribute,
+        )
+
+        if (
+          mainPlayer?.indicator.circle &&
+          this.controlStatus.selectedObject.indicator.circle
+        )
+          this.characterStore.updateTargetDistance(
+            this.getMeshDistance(
+              mainPlayer?.indicator.circle,
+              this.controlStatus.selectedObject.indicator.circle,
+            ),
+          )
+      }
+
       if (this.scene) this.scene.render()
       this.stats.end()
     }
 
-    this.engine.runRenderLoop(this.renderLoopCallback)
+    if (this.engine) this.engine.runRenderLoop(this.renderLoopCallback)
+  }
+
+  private getMeshDistance(mesh1: Mesh, mesh2: Mesh): number {
+    mesh1.refreshBoundingInfo()
+    mesh2.refreshBoundingInfo()
+
+    const center1 = mesh1.getBoundingInfo().boundingSphere.centerWorld
+    const center2 = mesh2.getBoundingInfo().boundingSphere.centerWorld
+
+    const radius1 = mesh1.getBoundingInfo().boundingSphere.radiusWorld
+    const radius2 = mesh2.getBoundingInfo().boundingSphere.radiusWorld
+
+    const centersDistance = Vector3.Distance(center1, center2)
+
+    return centersDistance - radius1 - radius2
   }
 
   private handleKeydown(e: KeyboardEvent): void {
@@ -317,9 +386,9 @@ export class EagerWing___LabControl {
     this.boundBlurHandler = this.handleBlur.bind(this)
 
     window.addEventListener("resize", this.boundResizeHandler)
-    window.addEventListener("keydown", (e) => this.handleKeydown(e))
-    window.addEventListener("keyup", (e) => this.handleKeyup(e))
-    window.addEventListener("blur", this.handleBlur)
+    window.addEventListener("keydown", this.boundKeydownHandler)
+    window.addEventListener("keyup", this.boundKeyupHandler)
+    window.addEventListener("blur", this.boundBlurHandler)
   }
 
   handleResize(): void {
@@ -330,41 +399,40 @@ export class EagerWing___LabControl {
     if (this.isDestroyed) return
     this.isDestroyed = true
 
-    if (this.renderLoopCallback) {
-      this.engine.stopRenderLoop(this.renderLoopCallback)
-    }
-    if (import.meta.hot) {
-      import.meta.hot.dispose(() => {
-        this.destroy()
-      })
+    if (this.engine) {
+      const canvas = this.engine?.getRenderingCanvas()
+      if (canvas?.parentNode) {
+        canvas.parentNode.removeChild(canvas)
+      }
     }
 
+    // Stop rendering
+    if (this.engine) {
+      this.engine.stopRenderLoop()
+      this.engine.dispose()
+      this.engine = null
+    }
+
+    // Dispose scene
+    this.scene?.dispose()
+    this.scene = null
+
+    // Remove event listeners
     if (this.boundResizeHandler)
       window.removeEventListener("resize", this.boundResizeHandler)
-
     if (this.boundKeydownHandler)
       window.removeEventListener("keydown", this.boundKeydownHandler)
-
     if (this.boundKeyupHandler)
       window.removeEventListener("keyup", this.boundKeyupHandler)
-
     if (this.boundBlurHandler)
       window.removeEventListener("blur", this.boundBlurHandler)
 
-    if (this.cameraActionManager) this.cameraActionManager.destroy()
-
+    // Clean DOM
     this.stats.dom.remove()
-    if (this.stats.dom.parentNode) {
-      this.stats.dom.parentNode.removeChild(this.stats.dom)
-    }
+    this.cameraActionManager?.destroy()
 
-    const canvas = this.engine.getRenderingCanvas()
-    if (canvas?.parentNode) {
-      canvas.remove()
-      canvas.parentNode.removeChild(canvas)
-    }
-
-    this.mapManager?.dispose?.()
+    // Clean resources
+    this.mapManager?.dispose()
     this.mapManager = null
 
     this.characterInstances.forEach(({ instance, root }) => {
@@ -397,7 +465,7 @@ export class EagerWing___LabControl {
     attributeList.forEach(({ object, attribute }, key) => {
       const characterAsset = this.assetManager.get(object)
 
-      if (characterAsset) {
+      if (characterAsset && this.engine && this.scene) {
         const characterInstance = new EagerWing___Character(
           this.engine,
           this.scene,
@@ -410,29 +478,30 @@ export class EagerWing___LabControl {
           attributeList.get("mainPlayer")?.attribute.information.race !=
           attribute.information.race
 
-        this.logStore.addMessage({
-          type: "info",
-          content: `Checking ${attributeList.get("mainPlayer")?.attribute.information.race} with ${attribute.information.race} ${isEnemy}`,
-        })
-
         const { root, getAnimationGroup, collider, indicator } =
           characterInstance.createCharacter(isEnemy, () => {
-            if (this.hl) {
-              this.hl.removeAllMeshes()
-            }
+            if (this.scene) {
+              if (this.highLightLayer) {
+                this.highLightLayer.removeAllMeshes()
+              }
 
-            const tNode = this.scene.getMeshByName(
-              `indicator_${attribute.modelId}`,
-            )
+              const tNode = this.scene.getMeshByName(
+                `indicator_${attribute.modelId}`,
+              )
 
-            if (tNode) {
-              if (tNode instanceof BABYLON.Mesh) {
-                this.hl.addMesh(
-                  tNode,
-                  isEnemy
-                    ? new BABYLON.Color3(1, 0, 0)
-                    : new BABYLON.Color3(1, 1, 0),
-                )
+              if (tNode) {
+                if (tNode instanceof Mesh) {
+                  this.highLightLayer.addMesh(
+                    tNode,
+                    isEnemy ? new Color3(1, 0, 0) : new Color3(1, 1, 0),
+                  )
+
+                  this.controlStatus.selectedObject = {
+                    attribute: attribute,
+                    indicator,
+                    isEnemy: isEnemy,
+                  }
+                }
               }
             }
           })
@@ -449,7 +518,7 @@ export class EagerWing___LabControl {
 
     const mainPlayer = this.characterInstances.get("mainPlayer")
 
-    if (this.scene.activeCamera) {
+    if (this.scene && this.scene.activeCamera) {
       if (mainPlayer && mainPlayer.root) {
         await this.setupMap()
 

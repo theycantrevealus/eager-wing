@@ -4,16 +4,24 @@ import type {
   Tile,
 } from "#interfaces/map.config"
 import type { LogStore } from "#stores/utils/log"
-import * as BABYLON from "babylonjs"
+import {
+  Scene,
+  TransformNode,
+  AbstractMesh,
+  StandardMaterial,
+  Color3,
+  MeshBuilder,
+  SceneLoader,
+} from "babylonjs"
 
 export class EagerWing___Map {
   private logStore: LogStore
-  private scene: BABYLON.Scene
-  private player: BABYLON.TransformNode | null
+  private scene: Scene
+  private player: TransformNode | null
 
   private loadingPromises: Set<string> = new Set()
-  private skeletonMeshes: { [key: string]: BABYLON.AbstractMesh } = {}
-  private loadedMeshes: { [key: string]: BABYLON.AbstractMesh[] } = {}
+  private skeletonMeshes: { [key: string]: AbstractMesh } = {}
+  private loadedMeshes: { [key: string]: AbstractMesh[] } = {}
   private errors: MapValidationError[] = []
   private config: MapConfig
 
@@ -23,8 +31,8 @@ export class EagerWing___Map {
 
   constructor(
     logStore: LogStore,
-    scene: BABYLON.Scene,
-    player: BABYLON.TransformNode | null,
+    scene: Scene,
+    player: TransformNode | null,
     config: MapConfig,
   ) {
     this.logStore = logStore
@@ -37,17 +45,17 @@ export class EagerWing___Map {
   }
 
   private createSkeleton() {
-    const okMat = new BABYLON.StandardMaterial("ok", this.scene)
+    const okMat = new StandardMaterial("ok", this.scene)
     okMat.wireframe = true
-    okMat.emissiveColor = new BABYLON.Color3(0, 1, 0)
+    okMat.emissiveColor = new Color3(0, 1, 0)
 
-    const badMat = new BABYLON.StandardMaterial("bad", this.scene)
+    const badMat = new StandardMaterial("bad", this.scene)
     badMat.wireframe = true
-    badMat.emissiveColor = new BABYLON.Color3(1, 0, 0)
+    badMat.emissiveColor = new Color3(1, 0, 0)
 
     this.config.manifest.forEach((tile) => {
       const [w, d] = tile.size
-      const box = BABYLON.MeshBuilder.CreateBox(
+      const box = MeshBuilder.CreateBox(
         `tile_${tile.x}_${tile.z}`,
         { width: w, height: 1, depth: d },
         this.scene,
@@ -136,7 +144,7 @@ export class EagerWing___Map {
     this.loadingPromises.add(key)
 
     try {
-      const result = await BABYLON.SceneLoader.ImportMeshAsync(
+      const result = await SceneLoader.ImportMeshAsync(
         "",
         this.config.url,
         tile.lod0,
@@ -167,11 +175,11 @@ export class EagerWing___Map {
     }
   }
 
-  public getPlayer(): BABYLON.TransformNode | null {
+  public getPlayer(): TransformNode | null {
     return this.player
   }
 
-  public setPlayer(player: BABYLON.TransformNode) {
+  public setPlayer(player: TransformNode) {
     this.player = player
     if (!this.initialLoadPromise) {
       this.initialLoadPromise = this.loadInitialTiles()
