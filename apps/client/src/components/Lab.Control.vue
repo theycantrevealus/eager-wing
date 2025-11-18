@@ -2,6 +2,7 @@
   <div>
     <canvas ref="canvasEl" class="w-full h-full"></canvas>
     <!-- UI Overlay -->
+    <target-health-bar></target-health-bar>
     <div class="overlay">
       <div
         v-for="(panel, index) in panels"
@@ -53,12 +54,16 @@ import { EagerWing___LabControl } from "#GL/render/lab.control"
 import type { Panel } from "#types/Panel"
 import { defineAsyncComponent, defineComponent, markRaw } from "vue"
 import { useLogStore } from "../stores/utils/log"
+import TargetHealthBar from "./indicator/Target.HealthBar.vue"
+import { useCharacterStore } from "#stores/character.ts"
 
 export default defineComponent({
   name: "LabControl",
+  components: { TargetHealthBar },
   data() {
     return {
-      chatStore: markRaw(useLogStore()),
+      logStore: markRaw(useLogStore()),
+      characterStore: markRaw(useCharacterStore()),
       processor: null as EagerWing___LabControl | null,
       characterInitAttribute: LAB_CHARACTER,
 
@@ -85,7 +90,7 @@ export default defineComponent({
   //   ...mapStores(useLogStore),
   // },
   mounted() {
-    this.chatStore.addMessage({
+    this.logStore.addMessage({
       type: "debug",
       content: "Welcome to Lab Control!",
     })
@@ -93,7 +98,8 @@ export default defineComponent({
     if (!canvas) return
 
     this.processor = new EagerWing___LabControl(
-      useLogStore(),
+      this.logStore,
+      this.characterStore,
       canvas,
       new Map([["character", "../characters/DUMMY.glb"]]),
       this.characterInitAttribute,
@@ -143,7 +149,7 @@ export default defineComponent({
       const rect = e.currentTarget.parentElement.getBoundingClientRect()
       this.offsetX = e.clientX - rect.left
       this.offsetY = e.clientY - rect.top
-      this.chatStore.addMessage({
+      this.logStore.addMessage({
         type: "debug",
         content: `Moving panel index ${index} to (${this.offsetX}, ${this.offsetY})`,
       })

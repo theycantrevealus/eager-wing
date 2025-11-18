@@ -1,4 +1,28 @@
-import * as BABYLON from "babylonjs"
+import {
+  Engine,
+  Scene,
+  Ray,
+  AnimationGroup,
+  AssetContainer,
+  Vector3,
+  Observer,
+  Mesh,
+  TransformNode,
+  HighlightLayer,
+  MeshBuilder,
+  StandardMaterial,
+  ActionManager,
+  ExecuteCodeAction,
+  AxesViewer,
+  Skeleton,
+  Nullable,
+  Bone,
+  AbstractMesh,
+  PBRMaterial,
+  Color3,
+  ArcRotateCamera,
+  Scalar,
+} from "babylonjs"
 import type {
   CharacterAttribute,
   CharacterBoneCollection,
@@ -15,16 +39,12 @@ import { SKELETON_MAP } from "#constants/map.skeleton"
  */
 export class EagerWing___Character {
   /** Engine renderer. */
-  private engine: BABYLON.Engine
+  private engine: Engine
 
   /** The active BabylonJS scene used for asset loading. */
-  private scene: BABYLON.Scene
+  private scene: Scene
 
-  private ray: BABYLON.Ray = new BABYLON.Ray(
-    new BABYLON.Vector3(),
-    new BABYLON.Vector3(),
-    0,
-  )
+  private ray: Ray = new Ray(new Vector3(), new Vector3(), 0)
 
   /** Label manager. */
   private label: EagerWing___Label
@@ -34,7 +54,7 @@ export class EagerWing___Character {
 
   private isEnemy: boolean = true
 
-  private characterSharedAsset: BABYLON.AssetContainer
+  private characterSharedAsset: AssetContainer
 
   /** Registered humanoid bones formatted with humanly name */
   private bonesCollection: CharacterBoneCollection = {}
@@ -45,12 +65,12 @@ export class EagerWing___Character {
   /** Character processing promise result. */
   protected isLoaded: boolean = false
 
-  private currentAnimation?: BABYLON.AnimationGroup
+  private currentAnimation?: AnimationGroup
   private currentAnimName: string | null = null
-  private fadeObserver?: BABYLON.Observer<BABYLON.Scene>
+  private fadeObserver?: Observer<Scene>
 
-  private labelPlane: BABYLON.Mesh | null = null
-  private labelUpdateObserver: BABYLON.Observer<BABYLON.Scene> | null = null
+  private labelPlane: Mesh | null = null
+  private labelUpdateObserver: Observer<Scene> | null = null
 
   /** Character Mode */
   private combatMode: boolean = false
@@ -81,15 +101,15 @@ export class EagerWing___Character {
    * Create character instance. Handle the character customizations, animations, motions, and else.
    * All the assets is shared for same character model: NPC, other players, etc
    *
-   * @param { BABYLON.Engine } engine - Main engine instance
-   * @param { BABYLON.Scene } scene - Main scene instance
-   * @param { BABYLON.AssetContainer } characterSharedAsset - Character shared asset
+   * @param { Engine } engine - Main engine instance
+   * @param { Scene } scene - Main scene instance
+   * @param { AssetContainer } characterSharedAsset - Character shared asset
    * @param { CharacterAttribute } characterAttribute - Character attribute
    */
   constructor(
-    engine: BABYLON.Engine,
-    scene: BABYLON.Scene,
-    characterSharedAsset: BABYLON.AssetContainer,
+    engine: Engine,
+    scene: Scene,
+    characterSharedAsset: AssetContainer,
     characterAttribute: CharacterAttribute,
   ) {
     this.engine = engine
@@ -112,12 +132,12 @@ export class EagerWing___Character {
     this.characterSharedAsset = characterSharedAsset
   }
 
-  public removeHighlight(nodeName: string, hl: BABYLON.HighlightLayer) {
+  public removeHighlight(nodeName: string, hl: HighlightLayer) {
     const node = this.scene.getTransformNodeByName(nodeName)
     if (!node) return
 
     node.getChildMeshes().forEach((mesh) => {
-      if (mesh instanceof BABYLON.Mesh) hl.removeMesh(mesh)
+      if (mesh instanceof Mesh) hl.removeMesh(mesh)
     })
   }
 
@@ -127,8 +147,8 @@ export class EagerWing___Character {
    *   1. Clone available skeleton
    *   2. Config style attribute
    *
-   * * @param { BABYLON.AssetContainer } assetContainer - Shared asset
-   * @param { BABYLON.AssetContainer } position - Character set position
+   * * @param { AssetContainer } assetContainer - Shared asset
+   * @param { AssetContainer } position - Character set position
    *
    * @returns
    */
@@ -136,16 +156,16 @@ export class EagerWing___Character {
     isEnemy: boolean = true,
     objectEvent: any,
   ): {
-    root: BABYLON.TransformNode
-    getAnimationGroup: Record<string, BABYLON.AnimationGroup>
-    collider: BABYLON.Mesh
+    root: TransformNode
+    getAnimationGroup: Record<string, AnimationGroup>
+    collider: Mesh
     indicator: {
-      circle: BABYLON.Mesh
+      circle: Mesh
     }
   } {
     this.isEnemy = isEnemy
     const assetContainer = this.characterSharedAsset
-    const position = new BABYLON.Vector3(
+    const position = new Vector3(
       this.characterAttribute.position.x,
       this.characterAttribute.position.y,
       this.characterAttribute.position.z,
@@ -160,12 +180,12 @@ export class EagerWing___Character {
         (name) => name + "_instance_" + this.characterAttribute.modelId,
       )
 
-    // const root = new BABYLON.TransformNode(
+    // const root = new TransformNode(
     //   `root_${this.characterAttribute.modelId}_${Math.random()}`,
     //   this.scene,
     // )
 
-    const root = new BABYLON.TransformNode(
+    const root = new TransformNode(
       `root_${this.characterAttribute.modelId}`,
       this.scene,
     )
@@ -175,20 +195,20 @@ export class EagerWing___Character {
       node.parent = root
     }
 
-    const collider = BABYLON.MeshBuilder.CreateBox(
+    const collider = MeshBuilder.CreateBox(
       `${root.name}_collider`,
       { size: 1, height: 4 },
       this.scene,
     )
 
-    const circle = BABYLON.MeshBuilder.CreateDisc(
+    const circle = MeshBuilder.CreateDisc(
       `indicator_${this.characterAttribute.modelId}`,
       {
         radius: 0.6,
         tessellation: 32,
       },
       this.scene,
-    )
+    ) as Mesh
 
     circle.parent = root
     circle.rotation.x = Math.PI / 2
@@ -196,7 +216,7 @@ export class EagerWing___Character {
     circle.isVisible = false
     circle.visibility = 0
 
-    const circleMat = new BABYLON.StandardMaterial(
+    const circleMat = new StandardMaterial(
       `indicatorMat_${this.characterAttribute.modelId}`,
       this.scene,
     )
@@ -208,38 +228,12 @@ export class EagerWing___Character {
     collider.isPickable = false
     collider.isVisible = true
     collider.visibility = 0
-    collider.actionManager = new BABYLON.ActionManager(this.scene)
+    collider.actionManager = new ActionManager(this.scene)
     collider.actionManager.registerAction(
-      new BABYLON.ExecuteCodeAction(
-        BABYLON.ActionManager.OnPickTrigger,
-        objectEvent,
-      ),
+      new ExecuteCodeAction(ActionManager.OnPickTrigger, objectEvent),
     )
-    // collider.actionManager.registerAction(
-    //   new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => {
-    //     const tNode = this.scene.getMeshByName(
-    //       `indicator_${this.characterAttribute.modelId}`,
-    //     )
 
-    //     if (tNode) {
-    //       if (tNode instanceof BABYLON.Mesh) {
-    //         const hl = new BABYLON.HighlightLayer(
-    //           `hl_${this.characterAttribute.modelId}`,
-    //           this.scene,
-    //         )
-
-    //         hl.addMesh(
-    //           tNode,
-    //           this.isEnemy
-    //             ? new BABYLON.Color3(1, 0, 0)
-    //             : new BABYLON.Color3(1, 1, 0),
-    //         )
-    //       }
-    //     }
-    //   }),
-    // )
-
-    const getAnimationGroup: Record<string, BABYLON.AnimationGroup> = {}
+    const getAnimationGroup: Record<string, AnimationGroup> = {}
 
     for (const ag of animationGroups) {
       getAnimationGroup[ag.name] = ag
@@ -251,11 +245,12 @@ export class EagerWing___Character {
       this.label.makeLabel(
         this.characterAttribute.information?.name ?? "Unnamed",
         root,
+        isEnemy,
       ))
 
     // Add debug axes if needed
     if (root && this.characterAttribute.classConfig?.needDebug) {
-      const axes = new BABYLON.AxesViewer(this.scene, 1)
+      const axes = new AxesViewer(this.scene, 1)
       axes.xAxis.parent = root
       axes.yAxis.parent = root
       axes.zAxis.parent = root
@@ -279,11 +274,11 @@ export class EagerWing___Character {
   /**
    * Register all bones to Eager Wing standard so it could identified easier
    *
-   * @param { BABYLON.Skeleton } skeleton - Skeleton from model to process
+   * @param { Skeleton } skeleton - Skeleton from model to process
    *
    * @returns { void }
    */
-  private registerBone(prefix: string = "", skeleton: BABYLON.Skeleton): void {
+  private registerBone(prefix: string = "", skeleton: Skeleton): void {
     const defBones =
       prefix === ""
         ? skeleton.bones
@@ -312,18 +307,19 @@ export class EagerWing___Character {
    *
    * @param { string } name - Mapped name of bone on SKELETON_MAP
    * @deprecated
-   * @returns { BABYLON.Bone | null }
+   * @returns { Bone | null }
    */
-  public getBoneByName(name: string): BABYLON.Bone | null {
+  public getBoneByName(name: string): Bone | null {
     return this.bonesCollection[name]?.bone ?? null
   }
 
   public applySkinTone(color: string) {
-    const bodyMeshes: BABYLON.Nullable<BABYLON.AbstractMesh> =
-      this.scene.getMeshByName(MESH_NAME.Body)
+    const bodyMeshes: Nullable<AbstractMesh> = this.scene.getMeshByName(
+      MESH_NAME.Body,
+    )
     if (bodyMeshes) {
-      const bodyMaterial = bodyMeshes.material as BABYLON.PBRMaterial
-      bodyMaterial.albedoColor = BABYLON.Color3.FromHexString(color)
+      const bodyMaterial = bodyMeshes.material as PBRMaterial
+      bodyMaterial.albedoColor = Color3.FromHexString(color)
     }
   }
 
@@ -334,32 +330,27 @@ export class EagerWing___Character {
    * @returns { void }
    */
   public update(
-    rootInstance: BABYLON.TransformNode,
-    animationGroup: Record<string, BABYLON.AnimationGroup>,
+    rootInstance: TransformNode,
+    animationGroup: Record<string, AnimationGroup>,
     modelID: string,
     key: KeyState,
-    camera: BABYLON.ArcRotateCamera,
+    camera: ArcRotateCamera,
     allowMovement: boolean = false,
   ): void {
     if (!rootInstance || !camera) return
 
     const { w, a, s, d, space } = key
     const moving = w || a || s || d
-    let moveDir = new BABYLON.Vector3(0, 0, 0)
+    let moveDir = new Vector3(0, 0, 0)
     let nextAnimName = this.combatMode
       ? `Armed-Idle_instance_${modelID}`
       : `UnArmed-Idle_instance_${modelID}`
 
-    const camForward = camera
-      .getDirection(BABYLON.Vector3.Forward())
-      .normalize()
+    const camForward = camera.getDirection(Vector3.Forward()).normalize()
     camForward.y = 0
     camForward.normalize()
 
-    const camRight = BABYLON.Vector3.Cross(
-      BABYLON.Vector3.Up(),
-      camForward,
-    ).normalize()
+    const camRight = Vector3.Cross(Vector3.Up(), camForward).normalize()
 
     /** ---------------------------------------------------------------------- movement */
     let useSpeed = this.characterAttribute.speed
@@ -406,7 +397,7 @@ export class EagerWing___Character {
         rootInstance.position.addInPlace(moveDir.scale(useSpeed))
 
         const camFacing = Math.atan2(camForward.x, camForward.z)
-        rootInstance.rotation.y = BABYLON.Scalar.Lerp(
+        rootInstance.rotation.y = Scalar.Lerp(
           rootInstance.rotation.y,
           camFacing,
           this.characterAttribute.turnSpeed,
@@ -417,9 +408,9 @@ export class EagerWing___Character {
     /** ---------------------------------------------------------------------- jump */
     const deltaTime = (this.engine.getDeltaTime() || 16) / 1000
     const origin = rootInstance.position.add(
-      new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
+      new Vector3(0, this.feetOffset + 0.2, 0),
     )
-    const down = new BABYLON.Vector3(0, -1, 0)
+    const down = new Vector3(0, -1, 0)
     const rayLength = Math.abs(this.feetOffset) + 2
 
     // this.ray =
@@ -456,7 +447,7 @@ export class EagerWing___Character {
       rootInstance.position.y += this.verticalVelocity * deltaTime
 
       const originAfter = rootInstance.position.add(
-        new BABYLON.Vector3(0, this.feetOffset + 0.2, 0),
+        new Vector3(0, this.feetOffset + 0.2, 0),
       )
 
       const pickAfter = this.scene.pickWithRay(this.ray, (mesh) => {
@@ -499,7 +490,7 @@ export class EagerWing___Character {
         const diff = targetY - curY
         if (Math.abs(diff) > 0.001) {
           const snapSpeed = 30 // higher = faster snap
-          rootInstance.position.y = BABYLON.Scalar.Lerp(
+          rootInstance.position.y = Scalar.Lerp(
             curY,
             targetY,
             Math.min(1, snapSpeed * deltaTime),
@@ -514,7 +505,7 @@ export class EagerWing___Character {
     /** ---------------------------------------------------------------------- end of jump */
 
     if (allowMovement)
-      camera.target = rootInstance.position.add(new BABYLON.Vector3(0, 1, 0))
+      camera.target = rootInstance.position.add(new Vector3(0, 1, 0))
 
     /** ---------------------------------------------------------------------- animation */
     if (this.currentAnimName !== nextAnimName && allowMovement) {
@@ -523,7 +514,7 @@ export class EagerWing___Character {
   }
 
   private stopAllAnimations(
-    animationGroup: Record<string, BABYLON.AnimationGroup>,
+    animationGroup: Record<string, AnimationGroup>,
   ): void {
     Object.values(animationGroup).forEach((ag) => {
       try {
@@ -546,7 +537,7 @@ export class EagerWing___Character {
   }
 
   public playAnimation(
-    animationGroup: Record<string, BABYLON.AnimationGroup>,
+    animationGroup: Record<string, AnimationGroup>,
     name: string,
     duration = 300,
   ) {
@@ -600,8 +591,8 @@ export class EagerWing___Character {
   }
 
   private crossFade(
-    from: BABYLON.AnimationGroup,
-    to: BABYLON.AnimationGroup,
+    from: AnimationGroup,
+    to: AnimationGroup,
     duration: number,
   ) {
     if (!this.scene) return
@@ -688,7 +679,7 @@ export class EagerWing___Character {
   }
 
   public toogleCombatMode(
-    getAnimationGroup: Record<string, BABYLON.AnimationGroup> | null,
+    getAnimationGroup: Record<string, AnimationGroup> | null,
   ) {
     this.stopAllAnimations(getAnimationGroup!) // TODO : this make animation not smooth. Fix it
     if (getAnimationGroup)

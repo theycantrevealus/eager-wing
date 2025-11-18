@@ -1,4 +1,11 @@
-import * as BABYLON from "babylonjs"
+import {
+  Scene,
+  Mesh,
+  MeshBuilder,
+  TransformNode,
+  Observer,
+  Vector3,
+} from "babylonjs"
 import * as GUI from "babylonjs-gui"
 
 /**
@@ -16,38 +23,39 @@ import * as GUI from "babylonjs-gui"
 
 export class EagerWing___Label {
   /** The active BabylonJS scene used for asset loading. */
-  private scene: BABYLON.Scene
+  private scene: Scene
 
   /**
    * Label Management
    *
-   * @param { BABYLON.Scene } scene - Main scene instance
-   * @param { BABYLON.AssetContainer } characterSharedAsset - Character shared asset
+   * @param { Scene } scene - Main scene instance
+   * @param { AssetContainer } characterSharedAsset - Character shared asset
    * @param { CharacterAttribute } characterAttribute - Character attribute
    */
-  constructor(scene: BABYLON.Scene) {
+  constructor(scene: Scene) {
     this.scene = scene
   }
   /**
    * @public
    * @param { string } text - Text to display
-   * @param { BABYLON.TransformNode } parent - Parent node
+   * @param { TransformNode } parent - Parent node
    * @returns
    */
   public makeLabel(
     text: string,
-    parent: BABYLON.TransformNode,
+    parent: TransformNode,
+    isEnemy: boolean = true,
   ): {
-    plane: BABYLON.Mesh
-    observer: BABYLON.Observer<BABYLON.Scene>
+    plane: Mesh
+    observer: Observer<Scene>
   } {
-    const plane = BABYLON.MeshBuilder.CreatePlane(
+    const plane = MeshBuilder.CreatePlane(
       "labelPlane",
       { width: 1, height: 0.25 },
       this.scene,
     )
 
-    plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL
+    plane.billboardMode = Mesh.BILLBOARDMODE_ALL
     plane.parent = parent
     plane.position.y = 2.2
 
@@ -60,7 +68,7 @@ export class EagerWing___Label {
 
     const textBlock = new GUI.TextBlock()
     textBlock.text = text
-    textBlock.color = "white"
+    textBlock.color = isEnemy ? "red" : "white"
     textBlock.fontSize = 64
     textBlock.outlineColor = "black"
     textBlock.outlineWidth = 8
@@ -72,7 +80,7 @@ export class EagerWing___Label {
       const camera = this.scene.activeCamera
       if (!camera) return
 
-      const distance = BABYLON.Vector3.Distance(
+      const distance = Vector3.Distance(
         camera.position,
         plane.getAbsolutePosition(),
       )
