@@ -3,6 +3,7 @@ node_modules/
 *.log
 apps/client/public/
 apps/client/characters/
+apps/client/src/assets/dock/
 apps/client/src/assets/clothes/
 apps/client/src/assets/cursor/
 apps/client/src/assets/font/

@@ -28,13 +28,39 @@
 .panel-header {
   border-radius: 8px;
   color: white;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.13)),
+    radial-gradient(
+      90% 7% at 50% 8%,
+      rgba(255, 255, 255, 0.47) 25%,
+      rgba(255, 255, 255, 0) 50%
+    ),
+    #1e272e;
+  border: 0;
+  border-radius: 0.375em;
+  box-shadow:
+    0.2em 0.2em 0.5em rgba(0, 0, 0, 0.47),
+    0 -0.1em 0 0.1em rgba(0, 0, 0, 0.27),
+    0 0.1em 0 0.1em rgba(255, 255, 255, 0.27),
+    -0.2em 0 0.2em #17232e inset,
+    0 0.2em 0.2em rgba(255, 255, 255, 0.27) inset,
+    0.2em 0 0.2em rgba(255, 255, 255, 0.27) inset,
+    0 -0.2em 0.2em #26303e inset;
+  color: #fff;
+  cursor: pointer;
+  text-shadow: 0 0 0.2em rgba(255, 255, 255, 0.47);
+  transition-property: box-shadow;
+  -webkit-tap-highlight-color: transparent;
   padding: 6px 10px;
   font-weight: bold;
   cursor: grab;
   display: flex;
+  text-align: center;
+  display: block;
   justify-content: space-between;
   align-items: center;
 }
+
 .panel-header:active {
   cursor: grabbing;
 }
@@ -57,6 +83,9 @@
 
 /* Minimize button */
 .min-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
   background: transparent;
   border: none;
   color: white;
@@ -101,19 +130,57 @@
 }
 
 .p-tab {
-  font-size: 8pt !important;
-  color: #b4ad8f !important;
-  padding: 5px !important;
-  border: transparent !important;
+  font-size: 6pt !important;
+  color: #fff !important;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.13)),
+    radial-gradient(
+      90% 7% at 50% 8%,
+      rgba(255, 255, 255, 0.47) 25%,
+      rgba(255, 255, 255, 0) 50%
+    ),
+    #1e272e;
+  border: 0;
+  border-radius: 0.375em;
+  box-shadow:
+    0.2em 0.2em 0.5em rgba(0, 0, 0, 0.47),
+    0 -0.1em 0 0.1em rgba(0, 0, 0, 0.27),
+    0 0.1em 0 0.1em rgba(255, 255, 255, 0.27),
+    -0.2em 0 0.2em #17232e inset,
+    0 0.2em 0.2em rgba(255, 255, 255, 0.27) inset,
+    0.2em 0 0.2em rgba(255, 255, 255, 0.27) inset,
+    0 -0.2em 0.2em #26303e inset;
+  color: #fff;
+  cursor: pointer;
+  text-shadow: 0 0 0.2em rgba(255, 255, 255, 0.47);
+  transition-property: box-shadow;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .p-tab-active {
-  color: #fff !important;
-  border-radius: 5px 5px 0 0 !important;
-  border-bottom: solid 1px transparent !important;
-  border-top: solid 1px #b4ad8f !important;
-  border-left: solid 1px #b4ad8f !important;
-  border-right: solid 1px #b4ad8f !important;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.13)),
+    radial-gradient(
+      90% 7% at 50% 8%,
+      rgba(255, 255, 255, 0.47) 25%,
+      rgba(255, 255, 255, 0) 50%
+    ),
+    #31404e !important;
+  border: 0;
+  border-radius: 0.375em;
+  box-shadow:
+    0.2em 0.2em 0.5em rgba(0, 0, 0, 0.47),
+    0 -0.1em 0 0.1em rgba(0, 0, 0, 0.27),
+    0 0.1em 0 0.1em rgba(255, 255, 255, 0.27),
+    -0.2em 0 0.2em #31404e inset,
+    0 0.2em 0.2em rgba(255, 255, 255, 0.27) inset,
+    0.2em 0 0.2em rgba(255, 255, 255, 0.27) inset,
+    0 -0.2em 0.2em #31404e inset;
+  color: #fff;
+  cursor: pointer;
+  text-shadow: 0 0 0.2em rgba(255, 255, 255, 0.47);
+  transition-property: box-shadow;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .p-tab.p-tab-active {
@@ -162,4 +229,60 @@
 
 .chat-p:hover {
   text-shadow: 0px 0px 10px #fff;
+}
+
+.overflow-y {
+  overflow-y: auto;
+}
+
+.panel-table {
+  width: 100%;
+  background: #0e151a;
+  border-collapse: separate;
+}
+
+.panel-table thead tr th {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.13)),
+    radial-gradient(
+      90% 7% at 50% 8%,
+      rgba(255, 255, 255, 0.47) 25%,
+      rgba(255, 255, 255, 0) 50%
+    ),
+    #1e272e;
+  border: 0;
+  border-radius: 0.375em;
+  box-shadow:
+    0.2em 0.2em 0.5em rgba(0, 0, 0, 0.47),
+    0 -0.1em 0 0.1em rgba(0, 0, 0, 0.27),
+    0 0.1em 0 0.1em rgba(255, 255, 255, 0.27),
+    -0.2em 0 0.2em #17232e inset,
+    0 0.2em 0.2em rgba(255, 255, 255, 0.27) inset,
+    0.2em 0 0.2em rgba(255, 255, 255, 0.27) inset,
+    0 -0.2em 0.2em #26303e inset;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.75em 1em;
+  text-shadow: 0 0 0.2em rgba(255, 255, 255, 0.47);
+  transition-property: box-shadow;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panel-table thead tr th,
+.panel-table thead tr th span {
+  transition-duration: 0.1s;
+  transition-timing-function: linear;
+}
+
+.panel-table tbody tr td {
+  background: #151c21;
+  border: solid 2.5px #0e151a;
+  padding: 10px !important;
+}
+
+.panel-table tbody tr td.wrap-content {
+  word-wrap: break-word !important;
+  white-space: nowrap !important;
+  width: 1% !important;
+  padding: 0 !important;
 }

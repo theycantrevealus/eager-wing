@@ -1,0 +1,9 @@
+#panel-skillcontainer {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#panel-skillcontainer .panel-table tbody tr td img {
+  width: 40px;
+}

@@ -99,6 +99,7 @@ export default defineComponent({
   props: {
     debug: { type: Boolean, default: false },
     parameter: { type: Object, default: () => ({ tabIndex: "0" }) },
+    passingProp: {},
   },
   computed: {
     // ...mapStores(useChatStore),

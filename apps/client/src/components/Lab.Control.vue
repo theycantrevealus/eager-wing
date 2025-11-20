@@ -1,8 +1,8 @@
 <template>
   <div>
     <canvas ref="canvasEl" class="w-full h-full"></canvas>
-    <!-- UI Overlay -->
     <target-health-bar></target-health-bar>
+    <dockbar :passingProp="skillManagement.quickbar"></dockbar>
     <div class="overlay">
       <div
         v-for="(panel, index) in panels"
@@ -33,6 +33,7 @@
             :debug="true"
             @update-parameter="updatePanelParameter(index, $event)"
             :parameter="panel.parameter"
+            :passingProp="panel.passingProp"
           ></component>
         </div>
 
@@ -49,17 +50,19 @@
 <script lang="ts">
 import { LAB_CHARACTER } from "#constants/lab.character"
 import { KEYBOARD_MAP } from "#constants/map.keyboard"
-import { PANEL } from "#constants/panel"
+import { PANEL, SKILLS } from "#constants/panel"
 import { EagerWing___LabControl } from "#GL/render/lab.control"
 import type { Panel } from "#types/Panel"
 import { defineAsyncComponent, defineComponent, markRaw } from "vue"
 import { useLogStore } from "../stores/utils/log"
-import TargetHealthBar from "./indicator/Target.HealthBar.vue"
+
 import { useCharacterStore } from "#stores/character.ts"
+import TargetHealthBar from "./indicator/Target.HealthBar.vue"
+import Dockbar from "./panel/Dockbar.vue"
 
 export default defineComponent({
   name: "LabControl",
-  components: { TargetHealthBar },
+  components: { TargetHealthBar, Dockbar },
   data() {
     return {
       logStore: markRaw(useLogStore()),
@@ -71,6 +74,7 @@ export default defineComponent({
 
       /** Panel Management */
       panels: [PANEL[1]] as Panel[],
+      skills: SKILLS,
       dragging: false,
       resizing: false,
       activeIndex: null as number | null,
@@ -84,6 +88,11 @@ export default defineComponent({
       altPressed: false,
       shiftPressed: false,
       command: "",
+
+      /** State Management */
+      skillManagement: {
+        quickbar: [] as any[],
+      },
     }
   },
   // computed: {
@@ -125,7 +134,6 @@ export default defineComponent({
         const rawAsyncComponent = defineAsyncComponent(
           () => import(`#vite/components/panel/Utils/${target}.vue`),
         )
-        // 👇 mark it raw before storing inside reactive Map
         this.asyncCache.set(target, markRaw(rawAsyncComponent))
       }
       return this.asyncCache.get(target)
@@ -146,6 +154,7 @@ export default defineComponent({
       if (e.target.closest(".panel-content")) return
       this.dragging = true
       this.activeIndex = index
+
       const rect = e.currentTarget.parentElement.getBoundingClientRect()
       this.offsetX = e.clientX - rect.left
       this.offsetY = e.clientY - rect.top
@@ -262,9 +271,7 @@ export default defineComponent({
       this.shiftPressed = false
     },
     updatePanelParameter(index: number, newValue: object) {
-      alert()
       if (this.panels[index]?.parameter) {
-        alert()
         Object.assign(this.panels[index]?.parameter, newValue)
       }
     },

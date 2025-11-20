@@ -33,6 +33,10 @@ export const KEYBOARD_MAP: {
   },
   key_k: {
     description: "[UI] Skill",
+    command: {
+      type: "UI",
+      target: "skill",
+    },
   },
   key_l: {},
   key_m: {

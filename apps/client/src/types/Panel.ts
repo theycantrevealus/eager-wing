@@ -10,4 +10,5 @@ export type Panel = {
   width: number
   height: number
   parameter?: Record<string, any>
+  passingProp?: any
 }
