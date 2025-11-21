@@ -2,7 +2,7 @@
   <div>
     <canvas ref="canvasEl" class="w-full h-full"></canvas>
     <target-health-bar></target-health-bar>
-    <dockbar :passingProp="skillManagement.quickbar"></dockbar>
+    <dockbar :passingProp="skillManagement"></dockbar>
     <div class="overlay">
       <div
         v-for="(panel, index) in panels"
@@ -59,6 +59,7 @@ import { useLogStore } from "../stores/utils/log"
 import { useCharacterStore } from "#stores/character.ts"
 import TargetHealthBar from "./indicator/Target.HealthBar.vue"
 import Dockbar from "./panel/Dockbar.vue"
+import { Skill } from "#types/Skill.ts"
 
 export default defineComponent({
   name: "LabControl",
@@ -91,7 +92,29 @@ export default defineComponent({
 
       /** State Management */
       skillManagement: {
-        quickbar: [] as any[],
+        quickbar: [
+          {
+            slot: "1",
+            skill: {
+              id: 11,
+              name: "Attack",
+              icon: "attack.png",
+              type: "Action",
+            },
+          },
+          {
+            slot: "2",
+            skill: {
+              id: 1,
+              name: "Ferocious Strike I",
+              icon: "cbt_wa_robusthit_g1",
+              type: "Offensive",
+            },
+          },
+        ] as {
+          slot: string
+          skill?: Skill
+        }[],
       },
     }
   },
@@ -106,13 +129,13 @@ export default defineComponent({
     const canvas = this.$refs.canvasEl as HTMLCanvasElement
     if (!canvas) return
 
-    this.processor = new EagerWing___LabControl(
-      this.logStore,
-      this.characterStore,
-      canvas,
-      new Map([["character", "../characters/DUMMY.glb"]]),
-      this.characterInitAttribute,
-    )
+    // this.processor = new EagerWing___LabControl(
+    //   this.logStore,
+    //   this.characterStore,
+    //   canvas,
+    //   new Map([["character", "../characters/DUMMY.glb"]]),
+    //   this.characterInitAttribute,
+    // )
 
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -158,10 +181,6 @@ export default defineComponent({
       const rect = e.currentTarget.parentElement.getBoundingClientRect()
       this.offsetX = e.clientX - rect.left
       this.offsetY = e.clientY - rect.top
-      this.logStore.addMessage({
-        type: "debug",
-        content: `Moving panel index ${index} to (${this.offsetX}, ${this.offsetY})`,
-      })
       document.addEventListener("pointermove", this.onPointerMove)
       document.addEventListener("pointerup", this.onPointerUp)
       e.preventDefault()

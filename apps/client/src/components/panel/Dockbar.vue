@@ -16,7 +16,7 @@
             draggable="true"
             v-if="item.skill"
             :src="`${assetUrl}/assets/skill/${item.skill.icon}`"
-            @dragstart="onDragStart(item.skill, $event)"
+            @dragstart="onDragStart(item, $event)"
           />
         </div>
       </div>
@@ -82,9 +82,26 @@ export default defineComponent({
         skill?: Skill
       }[],
       skills: SKILLS,
+      fromSlot: {} as {
+        originalIndex: number
+        slot: string
+        skill?: Skill
+      } | null,
+    }
+  },
+  mounted() {
+    if (this.passingProp && this.passingProp.quickbar) {
+      this.slot = this.applySlot(this.passingProp.quickbar)
     }
   },
   methods: {
+    applySlot(config: any[]) {
+      const map = new Map(config.map((item) => [item.slot, item.skill]))
+      return this.slot.map((item) => ({
+        ...item,
+        skill: map.has(item.slot) ? map.get(item.slot) : item.skill,
+      }))
+    },
     onDragOver(event: MouseEvent) {
       event.preventDefault()
     },
@@ -97,6 +114,14 @@ export default defineComponent({
         this.slot
           .map((item, index) => {
             if (item.skill?.id == targetSkill[0]?.id) {
+              // if (this.slot[index]) {
+              //   if (this.fromSlot) {
+              //     this.slot[index].skill = undefined
+              //   } else {
+              //     this.slot[index] = this.fromSlot
+              //   }
+              // }
+
               if (this.slot[index]) this.slot[index].skill = undefined
             }
             return { ...item, originalIndex: index }
@@ -104,7 +129,15 @@ export default defineComponent({
           .filter((m: any) => m.slot == targetID[targetID.length - 1])
           .map((v) => {
             const changeSlot = this.slot[v.originalIndex]
+
             if (changeSlot && targetSkill[0]) {
+              if (this.fromSlot) {
+                const oldSlot = this.slot[this.fromSlot.originalIndex]
+                if (oldSlot) {
+                  oldSlot.skill = changeSlot.skill
+                  this.fromSlot = null
+                }
+              }
               changeSlot.skill = targetSkill[0]
             }
           })
@@ -117,8 +150,23 @@ export default defineComponent({
           img.style.pointerEvents = "none"
         })
 
+      this.slot
+        .map((item, index) => {
+          return { ...item, originalIndex: index }
+        })
+        .filter((m: any) => m.slot == item.slot)
+
+      this.fromSlot = {
+        ...item,
+        originalIndex: this.slot
+          .map((item, index) => {
+            return { ...item, originalIndex: index }
+          })
+          .filter((m: any) => m.slot == item.slot)[0]?.originalIndex,
+      }
+
       event.dataTransfer.effectAllowed = "move"
-      event.dataTransfer.setData("skill", item.id)
+      event.dataTransfer.setData("skill", item.skill.id)
 
       document.addEventListener("pointerup", this.onPointerUp)
     },

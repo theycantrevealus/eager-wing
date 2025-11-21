@@ -1,6 +1,7 @@
 import type { Panel } from "#types/Panel"
+import { Skill } from "#types/Skill.ts"
 
-export const SKILLS = [
+export const SKILLS: Skill[] = [
   {
     id: 1,
     name: "Ferocious Strike I",

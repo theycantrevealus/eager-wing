@@ -71,8 +71,7 @@
                 >
                   <td class="wrap-content">
                     <img
-                      draggable="true"
-                      @dragstart="onDragStart(item, $event)"
+                      style="pointer-events: none"
                       :src="`${assetUrl}/assets/skill/${item.icon}`"
                     />
                   </td>
